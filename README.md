@@ -1,4 +1,13 @@
 # Advanced RNA-seq Analysis Pipeline
+
+![Docker Pulls](https://img.shields.io/docker/pulls/gynecoloji/rnaseq_pipeline)
+![Docker Image Size](https://img.shields.io/docker/image-size/gynecoloji/rnaseq_pipeline)
+![GitHub Stars](https://img.shields.io/github/stars/gynecoloji/Snakemake_RNA_seq_containerization?style=social)
+![GitHub Forks](https://img.shields.io/github/forks/gynecoloji/Snakemake_RNA_seq_containerization?style=social)
+![GitHub Issues](https://img.shields.io/github/issues/gynecoloji/Snakemake_RNA_seq_containerization)
+![GitHub Last Commit](https://img.shields.io/github/last-commit/gynecoloji/Snakemake_RNA_seq_containerization)
+![License](https://img.shields.io/github/license/gynecoloji/Snakemake_RNA_seq_containerization)
+
 A comprehensive Snakemake workflow for RNA-seq data analysis that combines alignment-based quantification (HISAT2/featureCounts), alignment-free quantification (Salmon), and extensive quality control metrics in a single, easy-to-use pipeline.
 
 **🐳 Now with Docker support for easy deployment!**
