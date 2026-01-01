@@ -3,242 +3,277 @@
 ![Docker Pulls](https://img.shields.io/docker/pulls/gynecoloji/rnaseq_pipeline)
 ![Docker Image Size](https://img.shields.io/docker/image-size/gynecoloji/rnaseq_pipeline)
 ![GitHub Stars](https://img.shields.io/github/stars/gynecoloji/Snakemake_RNA_seq_containerization?style=social)
-![GitHub Forks](https://img.shields.io/github/forks/gynecoloji/Snakemake_RNA_seq_containerization?style=social)
-![GitHub Issues](https://img.shields.io/github/issues/gynecoloji/Snakemake_RNA_seq_containerization)
-![GitHub Last Commit](https://img.shields.io/github/last-commit/gynecoloji/Snakemake_RNA_seq_containerization)
 ![License](https://img.shields.io/github/license/gynecoloji/Snakemake_RNA_seq_containerization)
 
-A comprehensive Snakemake workflow for RNA-seq data analysis that combines alignment-based quantification (HISAT2/featureCounts), alignment-free quantification (Salmon), and extensive quality control metrics in a single, easy-to-use pipeline.
+**A production-ready, containerized Snakemake workflow for comprehensive RNA-seq analysis**
 
-**🐳 Now with Docker support for easy deployment!**
+Integrates alignment-based quantification (HISAT2), alignment-free quantification (Salmon), and extensive quality control in a single reproducible pipeline. Fully containerized with Docker and Singularity support for seamless deployment on workstations, cloud, and HPC systems.
 
-## 📚 Table of Contents
+---
 
-- [Overview](#overview)
-- [Pipeline Components](#pipeline-components)
-- [Workflow Diagram](#workflow-diagram)
-- [Requirements](#requirements)
-- [Installation](#installation)
-  - [Option 1: Docker (Recommended)](#option-1-docker-recommended)
-  - [Option 2: Local Conda Installation](#option-2-local-conda-installation)
-- [Usage](#usage)
-  - [Docker Usage](#docker-usage)
-  - [Local Usage](#local-usage)
-- [Input Requirements](#input-requirements)
-- [Output Description](#output-description)
-- [Parameters](#parameters)
-- [Conda Environments](#conda-environments)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
-- [Contact](#contact)
+## 🚀 Quick Start
+```bash
+# Clone the repository
+git clone https://github.com/gynecoloji/SnakeMake_RNAseq.git
+cd SnakeMake_RNAseq
 
-## 🔍 Overview
+# Prepare your data
+mkdir -p data ref
+cp /path/to/fastq/*_R1_001.fastq.gz data/
+cp /path/to/fastq/*_R2_001.fastq.gz data/
+cp /path/to/references/* ref/
 
-This pipeline integrates three complementary workflows for comprehensive RNA-seq analysis: (run them sequentially!)
+# Run with Docker (easiest)
+docker-compose build
+docker-compose up
 
-1. **Core RNA-seq Processing**: Raw read QC, trimming, alignment, and gene-level quantification
-2. **Advanced RNA-seq QC**: Multiple QC tools to evaluate alignment quality and RNA integrity
-3. **Transcript Quantification**: Alignment-free transcript-level quantification with standard and decoy-aware indices
+# Or run with Singularity (HPC)
+singularity pull rnaseq_pipeline.sif docker://gynecoloji/rnaseq-pipeline:latest
+singularity exec -B $(pwd)/data:/pipeline/data rnaseq_pipeline.sif snakemake --cores 20
+```
 
-By combining these approaches, the pipeline delivers robust gene expression estimates while providing detailed quality metrics to ensure reliable results.
+**Results:** Check `results/multiqc_report.html` for comprehensive QC summary.
 
-## 🧩 Pipeline Components
+---
 
-The workflow consists of three main component pipelines:
+## 📊 Overview
 
-### 1. Core RNA-seq Processing
+This pipeline provides **three complementary workflows** for robust RNA-seq analysis:
 
-- **Quality Control**: FastQC for raw reads
-- **Read Preprocessing**: Fastp for adapter trimming and quality filtering
-- **Alignment**: HISAT2 for spliced read alignment to the reference genome (you can also use other aligners)
-- **BAM Processing**: Samtools for filtering, sorting, and indexing
-- **Expression Quantification**: featureCounts for gene-level counting
-- **Results Summary**: MultiQC for aggregated quality reporting
+| Pipeline | Purpose | Key Tools | Output |
+|----------|---------|-----------|--------|
+| **Core RNA-seq** | Read processing & gene quantification | FastQC, fastp, HISAT2, featureCounts | Gene counts, alignments |
+| **Advanced QC** | Deep quality assessment | Picard, Qualimap, RSeQC | QC metrics, TIN scores |
+| **Salmon** | Transcript quantification | Salmon (standard + decoy) | Transcript abundances |
 
-### 2. Advanced RNA-seq QC
+### Pipeline Workflow
+```
+Raw FASTQ files
+    ↓
+[FastQC] → Quality assessment
+    ↓
+[fastp] → Adapter trimming & filtering
+    ↓
+[HISAT2] → Spliced alignment to genome
+    ↓
+[Samtools] → BAM filtering & sorting
+    ↓
+[featureCounts] → Gene-level quantification
+    ↓
+[MultiQC] → Comprehensive report
+    ↓
+[Picard/Qualimap/RSeQC] → Advanced QC metrics
+    ↓
+[Salmon] → Transcript-level quantification
+```
 
-- **Fragment Size Analysis**: Picard CollectInsertSizeMetrics
-- **Alignment QC**: Qualimap BAM QC for alignment quality metrics
-- **RNA-seq Specific QC**: Qualimap RNA-seq for gene model coverage statistics
-- **Transcript Analysis**: RSeQC for advanced RNA-seq QC metrics:
-  - Read distribution across genomic features
-  - GC content analysis
-  - Transcript integrity number (TIN) calculation
+**Why three pipelines?**
+- **Alignment-based** (HISAT2): Gold standard for gene counts
+- **Alignment-free** (Salmon): Fast, accurate transcript quantification
+- **Multi-tool QC**: Comprehensive quality validation from multiple perspectives
 
-### 3. Transcript Quantification
+---
 
-- **Alignment-free Quantification**: Salmon for direct transcript quantification
-- **Multiple Index Support**:
-  - Standard transcriptome index
-  - Decoy-aware transcriptome index (reduces mapping bias)
+## ✨ Key Features
 
-## 📊 Workflow Diagram
-![Workflow Plot](diagram.png)
+- ✅ **Fully Containerized** - Docker & Singularity support (no manual installation)
+- ✅ **HPC Ready** - SLURM/PBS job scripts included
+- ✅ **Reproducible** - All dependencies pinned in conda environments
+- ✅ **Comprehensive QC** - 7+ QC tools integrated
+- ✅ **Production Tested** - Handles paired-end RNA-seq at scale
+- ✅ **Well Documented** - Detailed guides for every use case
+- ✅ **Flexible** - Run individual pipelines or all together
 
-## 🛠️ Requirements
+---
 
-### For Docker (Recommended)
-- Docker ≥ 20.10
-- Docker Compose ≥ 1.29
-- 64GB+ RAM recommended
-- 20+ CPU cores recommended for optimal performance
+## 📖 Documentation
 
-### For Local Installation
-- Snakemake ≥ 7.0
-- Conda (for environment management)
-- 64GB+ RAM recommended
-- 20+ CPU cores recommended for optimal performance
+**Getting Started:**
+- 🐳 [**Docker Quick Reference**](DOCKER_QUICKREF.md) - Common commands & examples
+- 🖥️ [**HPC/Singularity Guide**](SINGULARITY_HPC.md) - Complete cluster deployment guide
+- 🛠️ [**Setup Guide**](SETUP_GUIDE.md) - Detailed installation & customization
+
+**Understanding the Pipeline:**
+- 📋 [**Input Requirements**](#input-requirements) - Data preparation checklist
+- 📊 [**Output Structure**](#output-description) - What gets generated
+- ⚙️ [**Parameters**](#parameters) - Configuration options
+
+**Need Help?**
+- 🐛 [**Troubleshooting**](#troubleshooting) - Common issues & solutions
+- 💡 [**Best Practices**](#best-practices) - Tips for optimal results
+
+---
 
 ## 📥 Installation
 
-### Option 1: Docker (Recommended)
+### Option 1: Docker (Recommended for Local/Cloud)
 
-**Step 1: Clone the repository**
+**Requirements:** Docker ≥ 20.10, Docker Compose ≥ 1.29
 ```bash
-git clone https://github.com/gynecoloji/SnakeMake_RNAseq.git
-cd SnakeMake_RNAseq
-```
+# Clone repository
+git clone https://github.com/gynecoloji/Snakemake_RNA_seq_containerization.git
+cd Snakemake_RNA_seq_containerization
 
-**Step 2: Build the Docker image**
-```bash
-# Using Docker
-docker build -t rnaseq-pipeline:latest .
-
-# Or using Docker Compose (easier)
+# Build image (one-time setup)
 docker-compose build
+
+# Verify installation
+docker-compose run rnaseq-pipeline --help
 ```
 
-That's it! All dependencies are included in the container.
+**Advantages:**
+- ✅ Zero dependency installation
+- ✅ Identical environment across systems
+- ✅ Easy resource management
 
-### Option 2: Local Conda Installation
+📖 **Full guide:** [DOCKER_QUICKREF.md](DOCKER_QUICKREF.md)
 
-Clone the repository:
+---
 
+### Option 2: Singularity (Recommended for HPC)
+
+**Requirements:** Singularity ≥ 3.x (usually pre-installed on HPC)
 ```bash
-git clone https://github.com/gynecoloji/SnakeMake_RNAseq.git
-cd SnakeMake_RNAseq
+# On HPC cluster - load module
+module load singularity
+
+# Pull pre-built container
+singularity pull rnaseq_pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
+
+# Or build from local Docker image
+docker save rnaseq_pipeline:latest | gzip > rnaseq_pipeline.tar.gz
+# Transfer to HPC, then:
+singularity build rnaseq_pipeline.sif docker-archive://rnaseq_pipeline.tar.gz
 ```
 
-Create conda environments:
+**Advantages:**
+- ✅ No root access required
+- ✅ Native HPC integration
+- ✅ SLURM/PBS compatible
 
+📖 **Full guide:** [SINGULARITY_HPC.md](SINGULARITY_HPC.md)
+
+---
+
+### Option 3: Local Conda (Advanced)
+
+**Requirements:** Conda/Mamba, 64GB+ RAM
 ```bash
-# Main snakemake environment
+# Clone repository
+git clone https://github.com/gynecoloji/Snakemake_RNA_seq_containerization.git
+cd Snakemake_RNA_seq_containerization
+
+# Create all environments
 conda env create -f envs/snakemake.yaml
-
-# QC tools environment
 conda env create -f envs/qualimap.yaml
-
-# RSeQC environment
 conda env create -f envs/RSeQC.yaml
-
-# Salmon environment
 conda env create -f envs/salmon.yaml
+
+# Activate main environment
+conda activate snakemake
 ```
+
+**Use this if:** You need to modify tool versions or can't use containers
+
+📖 **Full guide:** [SETUP_GUIDE.md](SETUP_GUIDE.md)
+
+---
+
+### Quick Comparison
+
+| Method | Setup Time | Reproducibility | HPC Support | Flexibility |
+|--------|------------|-----------------|-------------|-------------|
+| **Docker** | ~10 min | ⭐⭐⭐ | ❌ | ⭐⭐ |
+| **Singularity** | ~15 min | ⭐⭐⭐ | ✅ | ⭐⭐ |
+| **Conda** | ~30 min | ⭐⭐ | ✅ | ⭐⭐⭐ |
+
+---
 
 ## 🚀 Usage
 
 ### Docker Usage
 
-**Quick Start with Docker Compose (Easiest)**
-
-1. Place your FASTQ files in the `data/` directory
-2. Place reference files in the `ref/` directory
-3. Run the pipeline:
-
+**Run all three pipelines (recommended):**
 ```bash
-# Run all three pipelines sequentially
+# Using docker-compose (simplest)
 docker-compose up
 
-# Or run in detached mode
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-```
-
-**Advanced Docker Usage**
-
-```bash
-# Run with Docker directly
+# Or with docker run
 docker run --rm \
   -v $(pwd)/data:/pipeline/data \
   -v $(pwd)/ref:/pipeline/ref \
   -v $(pwd)/results:/pipeline/results \
   -v $(pwd)/logs:/pipeline/logs \
   rnaseq-pipeline:latest
-
-# Dry run (check what will be executed)
-docker run --rm \
-  -v $(pwd)/data:/pipeline/data \
-  -v $(pwd)/ref:/pipeline/ref \
-  rnaseq-pipeline:latest --dry-run
-
-# Run only core RNA-seq pipeline
-docker run --rm \
-  -v $(pwd)/data:/pipeline/data \
-  -v $(pwd)/ref:/pipeline/ref \
-  -v $(pwd)/results:/pipeline/results \
-  rnaseq-pipeline:latest --pipeline rna --cores 10
-
-# Run only QC analysis
-docker run --rm \
-  -v $(pwd)/data:/pipeline/data \
-  -v $(pwd)/ref:/pipeline/ref \
-  -v $(pwd)/results:/pipeline/results \
-  rnaseq-pipeline:latest --pipeline qc
-
-# Run only Salmon quantification
-docker run --rm \
-  -v $(pwd)/data:/pipeline/data \
-  -v $(pwd)/ref:/pipeline/ref \
-  -v $(pwd)/results:/pipeline/results \
-  rnaseq-pipeline:latest --pipeline salmon
-
-# Interactive shell for debugging
-docker run --rm -it \
-  -v $(pwd)/data:/pipeline/data \
-  -v $(pwd)/ref:/pipeline/ref \
-  -v $(pwd)/results:/pipeline/results \
-  rnaseq-pipeline:latest --shell
-
-# Using docker-compose for specific pipelines
-docker-compose run rnaseq-pipeline --pipeline rna --cores 15
-docker-compose run rnaseq-pipeline --dry-run
-docker-compose run rnaseq-pipeline --shell
 ```
 
-**Optional: Jupyter Notebook for Analysis**
-
+**Run individual pipelines:**
 ```bash
-# Start Jupyter notebook server
-docker-compose --profile jupyter up jupyter
+# Core RNA-seq only
+docker-compose run rnaseq_pipeline --pipeline rna --cores 10
 
-# Access at: http://localhost:8888
-# Token: rnaseq
+# QC analysis only
+docker-compose run rnaseq_pipeline --pipeline qc
+
+# Salmon quantification only
+docker-compose run rnaseq_pipeline --pipeline salmon
+
+# Dry run (check workflow without executing)
+docker-compose run rnaseq_pipeline --dry-run
 ```
 
-### Local Usage
-
-1. Place paired-end FASTQ files in the `data/` directory following the naming convention:
-   - `{sample}_R1_001.fastq.gz`
-   - `{sample}_R2_001.fastq.gz`
-
-2. Configure reference paths in the Snakefile:
-   - HISAT2 index: `ref/ENSEMBL/genome`
-   - GTF annotation: `ref/Homo_sapiens.GRCh38.102.gtf`
-   - Salmon indices: `ref/Salmon_index_Grch38` and `ref/Salmon_index_decoy_Grch38`
-   - RSeQC bed file: `ref/ENSEMBL_hg38.bed`
-
-3. Run the workflow:
-
+**Interactive debugging:**
 ```bash
-# Activate snakemake environment
+docker-compose run rnaseq_pipeline --shell
+# Inside container:
+conda activate snakemake
+snakemake -n -s snakefile_RNA
+```
+
+---
+
+### Singularity Usage (HPC)
+
+**Interactive execution:**
+```bash
+singularity exec \
+  -B $(pwd)/data:/pipeline/data \
+  -B $(pwd)/ref:/pipeline/ref \
+  -B $(pwd)/results:/pipeline/results \
+  -B $(pwd)/logs:/pipeline/logs \
+  rnaseq_pipeline.sif \
+  snakemake --use-conda --cores 20 -s /pipeline/snakefile_RNA -p
+```
+
+**Submit to SLURM scheduler:**
+```bash
+#!/bin/bash
+#SBATCH --job-name=rnaseq
+#SBATCH --cpus-per-task=20
+#SBATCH --mem=64G
+#SBATCH --time=24:00:00
+
+module load singularity
+
+singularity exec \
+  -B ${PWD}/data:/pipeline/data \
+  -B ${PWD}/ref:/pipeline/ref \
+  -B ${PWD}/results:/pipeline/results \
+  rnaseq_pipeline.sif \
+  snakemake --use-conda --cores ${SLURM_CPUS_PER_TASK} \
+    -s /pipeline/snakefile_RNA -p
+```
+
+📖 **Complete HPC guide with job scripts:** [SINGULARITY_HPC.md](SINGULARITY_HPC.md)
+
+---
+
+### Local Conda Usage
+```bash
+# Activate environment
 conda activate snakemake
 
-# Dry run to verify
-snakemake -n -s snakefile_RNA
-
-# Run core RNA-seq pipeline with 20 cores
+# Run core pipeline
 snakemake --use-conda --cores 20 -s snakefile_RNA -p
 
 # Run QC pipeline
@@ -246,130 +281,283 @@ snakemake --use-conda --cores 20 -s snakefile_RNAQC -p
 
 # Run Salmon pipeline
 snakemake --use-conda --cores 20 -s snakefile_salmon -p
+
+# Dry run first (recommended)
+snakemake -n -s snakefile_RNA
 ```
-
-## 📁 Input Requirements
-
-- **FASTQ files**: Paired-end reads with naming pattern `{sample}_R1_001.fastq.gz` and `{sample}_R2_001.fastq.gz`
-- **Reference files**:
-  - HISAT2 genome index
-  - GTF gene annotation file (ENSEMBL format)
-  - BED file for RSeQC tools
-  - Salmon indices (standard and decoy-aware)
-
-**Note**: When using Docker, mount these directories:
-- `./data` → `/pipeline/data` (FASTQ files)
-- `./ref` → `/pipeline/ref` (reference files)
-- `./results` → `/pipeline/results` (output)
-- `./logs` → `/pipeline/logs` (log files)
-
-## 📊 Output Description
-
-The pipeline generates organized outputs in the `results/` directory:
-
-```
-results/
-├── fastqc/                # Raw read quality reports
-├── trimmed/               # Trimmed reads and QC reports
-├── hisat2/                # Alignment files and summaries
-├── samtools/              # Processed BAM files and flagstat reports
-├── featurecounts/         # Gene-level counts
-├── picard/                # Insert size metrics and plots
-├── qualimap_bamqc/        # General alignment QC
-├── qualimap_rnaseq/       # RNA-specific QC
-├── rseqc/                 # Advanced RNA-seq QC metrics
-├── quants/                # Salmon standard index quantification
-├── quants_decoy/          # Salmon decoy-aware quantification
-└── multiqc_report.html    # Combined QC report
-```
-
-## ⚙️ Parameters
-
-Key configurable parameters in the workflow:
-
-- **HISAT2**:
-  - Max fragment length: 3000bp
-  - Mixed/discordant alignments: disabled
-
-- **Samtools**:
-  - Filtering: Properly paired reads (0x2) and primary alignments (-F 0x100)
-  - Uniquely mapped: Only reads with NH:i:1 tag
-
-- **featureCounts**:
-  - Count paired reads (-p)
-  - Feature type: exon
-  - ID attribute: gene_id
-  - Multi-mapping: count all (-M)
-  - Strand-specificity: unstranded (-s 0)
-
-- **Salmon**:
-  - Library type: automatic (-l A)
-  - Mapping validation: enabled (--validateMappings)
-
-## 🧪 Conda Environments
-
-The workflow uses four Conda environments:
-
-1. **snakemake.yaml**: Core tools (FastQC, fastp, HISAT2, Samtools, featureCounts, MultiQC)
-2. **qualimap.yaml**: Qualimap and Picard for alignment QC
-3. **RSeQC.yaml**: RSeQC tools for RNA-specific QC
-4. **salmon.yaml**: Salmon for transcript quantification
-
-## 🔧 Troubleshooting
-
-### Docker Issues
-
-**Problem**: Container can't access data files
-```bash
-# Solution: Check volume mounts and file permissions
-ls -la data/
-docker run --rm -v $(pwd)/data:/pipeline/data rnaseq-pipeline:latest ls -la /pipeline/data
-```
-
-**Problem**: Out of memory
-```bash
-# Solution: Increase Docker memory limit in Docker Desktop settings
-# Or reduce cores: --cores 10
-```
-
-**Problem**: Permission denied on results
-```bash
-# Solution: Fix ownership
-sudo chown -R $USER:$USER results/ logs/
-```
-
-### Pipeline Issues
-
-**Problem**: "No FASTQ files found"
-- Ensure files follow naming pattern: `{sample}_R1_001.fastq.gz`
-- Check they are in the correct directory
-
-**Problem**: Reference files not found
-- Update paths in Snakefiles
-- Ensure reference files are in `ref/` directory
-
-**Problem**: Conda environment conflicts
-```bash
-# Rebuild environments
-conda env remove -n snakemake
-conda env create -f envs/snakemake.yaml
-```
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 📧 Contact
-
-For questions or feedback, please open an issue on the GitHub repository or contact the author.
 
 ---
 
-**Pro Tips:**
-- Use `--dry-run` first to check the workflow
-- Monitor resource usage with `docker stats` or `htop`
-- Check MultiQC report for overall quality assessment
-- Use the interactive shell for debugging: `docker-compose run rnaseq-pipeline --shell`
+### Common Options
 
-Last updated: Dec 29th, 2025  
-Created by: gynecoloji
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--pipeline rna\|qc\|salmon\|all` | Which pipeline to run | `--pipeline rna` |
+| `--cores N` | Number of CPU cores | `--cores 10` |
+| `--dry-run` | Show what will run | `--dry-run` |
+| `--shell` | Interactive container shell | `--shell` |
+| `-n` | Snakemake dry run | `snakemake -n` |
+| `-p` | Print shell commands | `snakemake -p` |
+
+---
+
+## 📁 Input Requirements
+
+### Required Data Structure
+```
+project/
+├── data/                          # Your FASTQ files
+│   ├── sample1_R1_001.fastq.gz   # ⚠️ Must follow this naming pattern
+│   ├── sample1_R2_001.fastq.gz
+│   ├── sample2_R1_001.fastq.gz
+│   └── sample2_R2_001.fastq.gz
+├── ref/                           # Reference files
+│   ├── ENSEMBL/
+│   │   └── genome.*.ht2          # HISAT2 index files
+│   ├── Homo_sapiens.GRCh38.102.gtf
+│   ├── ENSEMBL_hg38.bed          # For RSeQC
+│   ├── Salmon_index_Grch38/      # Standard Salmon index
+│   └── Salmon_index_decoy_Grch38/ # Decoy-aware Salmon index
+├── results/                       # Auto-created, pipeline outputs
+└── logs/                          # Auto-created, log files
+```
+
+### Naming Convention (Critical!)
+
+**FASTQ files must match:** `{sample}_R1_001.fastq.gz` and `{sample}_R2_001.fastq.gz`
+
+✅ **Good:**
+- `Control1_R1_001.fastq.gz` / `Control1_R2_001.fastq.gz`
+- `Treatment_A_R1_001.fastq.gz` / `Treatment_A_R2_001.fastq.gz`
+
+❌ **Bad:**
+- `sample_1.fastq.gz` / `sample_2.fastq.gz` (wrong pattern)
+- `data_read1.fq.gz` / `data_read2.fq.gz` (wrong extension)
+
+### Reference Files Checklist
+
+- [ ] **HISAT2 index** - Built from your reference genome
+- [ ] **GTF annotation** - Gene models (ENSEMBL/GENCODE)
+- [ ] **BED file** - For RSeQC (can convert from GTF)
+- [ ] **Salmon indices** - Transcriptome indices (standard + decoy)
+
+📖 **How to prepare references:** See [SETUP_GUIDE.md](SETUP_GUIDE.md#reference-preparation)
+
+---
+
+## 📊 Output Description
+
+### Directory Structure
+```
+results/
+├── fastqc/raw/              # Raw read quality reports
+│   ├── {sample}_R1_001_fastqc.html
+│   └── {sample}_R2_001_fastqc.html
+│
+├── trimmed/                 # Trimmed reads & fastp reports
+│   ├── {sample}_R1.trimmed.fastq.gz
+│   ├── {sample}_R2.trimmed.fastq.gz
+│   ├── {sample}_fastp.html
+│   └── {sample}_fastp.json
+│
+├── hisat2/                  # Alignment files
+│   ├── {sample}.sam
+│   └── {sample}.sam.summary
+│
+├── samtools/                # Processed BAM files
+│   ├── {sample}.sorted.filtered.bam
+│   ├── {sample}.sorted.filtered.bam.bai
+│   └── {sample}_summary.txt (flagstat)
+│
+├── featurecounts/           # Gene-level counts
+│   └── featureCount.txt     # ⭐ Main count matrix
+│
+├── picard/                  # Fragment size metrics
+│   ├── {sample}_insert_size_metrics.txt
+│   └── {sample}_Histogram.pdf
+│
+├── qualimap_bamqc/          # Alignment QC
+│   └── {sample}/
+│       └── {sample}.pdf
+│
+├── qualimap_rnaseq/         # RNA-seq specific QC
+│   └── {sample}/
+│
+├── rseqc/                   # Advanced RNA metrics
+│   ├── {sample}_RD_summary.txt (read distribution)
+│   ├── {sample}_GC_content.GC.xls
+│   └── {sample}.sorted.filtered.tin.xls (transcript integrity)
+│
+├── quants/                  # Salmon standard quantification
+│   └── {sample}_quant/
+│       └── quant.sf         # ⭐ Transcript abundances
+│
+├── quants_decoy/            # Salmon decoy quantification
+│   └── {sample}_quant/
+│       └── quant.sf
+│
+├── multiqc_report.html      # 🎯 START HERE - Combined QC report
+└── multiqc_data/            # Data behind MultiQC report
+```
+
+### Key Output Files
+
+| File | Description | Use Case |
+|------|-------------|----------|
+| **multiqc_report.html** | 🎯 Aggregated QC from all tools | First check - overall quality |
+| **featureCount.txt** | Gene-level count matrix | DESeq2, edgeR analysis |
+| **quant.sf** | Transcript abundances (TPM) | Isoform analysis, sleuth |
+| **{sample}.sorted.filtered.bam** | Aligned reads | IGV visualization |
+| **{sample}.tin.xls** | Transcript integrity scores | RNA quality assessment |
+
+### What to Check First
+
+1. **MultiQC Report** - Overview of all samples
+   - Open `results/multiqc_report.html` in browser
+   - Check for failed samples, outliers
+
+2. **Alignment Rates** - In MultiQC or HISAT2 summaries
+   - Good: >80% aligned
+   - Acceptable: 70-80%
+   - Investigate: <70%
+
+3. **Feature Counts** - Gene quantification
+   - Located: `results/featurecounts/featureCount.txt`
+   - Use for differential expression analysis
+
+4. **Transcript Integrity** - RNA degradation check
+   - Located: `results/rseqc/{sample}.sorted.filtered.tin.xls`
+   - Good: TIN score >70
+   - Degraded: TIN score <60
+
+---
+
+## 🏆 Contributing
+
+Contributions are welcome! Please feel free to:
+
+- 🐛 Report bugs or issues
+- 💡 Suggest new features or improvements
+- 📝 Improve documentation
+- 🔧 Submit pull requests
+
+**Before contributing:**
+1. Check existing issues/PRs
+2. Open an issue to discuss major changes
+3. Follow existing code style
+4. Update documentation as needed
+
+---
+
+## 📝 Citation
+
+If you use this pipeline in your research, please cite:
+```bibtex
+@software{rnaseq_pipeline_2025,
+  author = {gynecoloji},
+  title = {Advanced RNA-seq Analysis Pipeline},
+  year = {2025},
+  url = {https://github.com/gynecoloji/Snakemake_RNA_seq_containerization},
+  version = {1.0}
+}
+```
+
+**Please also cite the tools used in the pipeline:**
+
+- **Snakemake:** Mölder et al. (2021) https://doi.org/10.12688/f1000research.29032.2
+- **HISAT2:** Kim et al. (2019) https://doi.org/10.1038/s41587-019-0201-4
+- **Salmon:** Patro et al. (2017) https://doi.org/10.1038/nmeth.4197
+- **FastQC:** https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+- **fastp:** Chen et al. (2018) https://doi.org/10.1093/bioinformatics/bty560
+- **featureCounts:** Liao et al. (2014) https://doi.org/10.1093/bioinformatics/btt656
+- **MultiQC:** Ewels et al. (2016) https://doi.org/10.1093/bioinformatics/btw354
+- **RSeQC:** Wang et al. (2012) https://doi.org/10.1093/bioinformatics/bts356
+- **Qualimap:** Okonechnikov et al. (2016) https://doi.org/10.1093/bioinformatics/btv566
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+**Summary:**
+- ✅ Commercial use allowed
+- ✅ Modification allowed
+- ✅ Distribution allowed
+- ✅ Private use allowed
+- ⚠️ No warranty provided
+- ⚠️ No liability
+
+---
+
+## 📧 Contact & Support
+
+**Author:** gynecoloji
+
+**Get Help:**
+- 🐛 **Bug Reports:** [Open an issue](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/issues)
+- 💬 **Questions:** [Start a discussion](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/discussions)
+- 📧 **Email:** [Contact via GitHub](https://github.com/gynecoloji)
+
+**Community:**
+- ⭐ Star this repo if you find it useful!
+- 🔄 Fork it for your own modifications
+- 📢 Share with colleagues
+
+---
+
+## 🙏 Acknowledgments
+
+This pipeline integrates tools developed by the bioinformatics community. Special thanks to:
+
+- The Snakemake team for the workflow framework
+- All tool developers for their excellent software
+- The Conda/Bioconda teams for package management
+- Docker and Singularity communities for containerization support
+
+---
+
+## 📊 Pipeline Statistics
+
+![Workflow](diagram.png)
+
+- **Tools Integrated:** 10+
+- **QC Metrics:** 20+
+- **Containerization:** Docker + Singularity
+- **Environments:** 4 isolated conda environments
+- **Reproducibility:** All dependencies pinned
+
+---
+
+## 🚀 Quick Links
+
+| Resource | Link |
+|----------|------|
+| 🏠 **Home** | [GitHub Repository](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization) |
+| 🐳 **Docker Hub** | [gynecoloji/rnaseq-pipeline](https://hub.docker.com/r/gynecoloji/rnaseq_pipeline) |
+| 📖 **Documentation** | [Guides & Tutorials](#documentation) |
+| 🐛 **Issues** | [Report Problems](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/issues) |
+| ⭐ **Star** | [Star this repo](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization) |
+
+---
+
+## 📅 Version History
+
+**v1.0** (January 2025)
+- ✨ Initial release with Docker support
+- ✨ Singularity/HPC integration
+- ✨ Three integrated pipelines (RNA-seq, QC, Salmon)
+- ✨ Comprehensive documentation
+- ✨ Production-ready workflows
+
+---
+
+<div align="center">
+
+**Built with ❤️ for the bioinformatics community**
+
+Last updated: January 2025
+
+[⬆ Back to Top](#advanced-rna-seq-analysis-pipeline)
+
+</div>
