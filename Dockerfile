@@ -1,6 +1,9 @@
 # Use Miniconda3 as base image
 FROM continuumio/miniconda3:latest
 
+# IMPORTANT: Use bash instead of sh
+SHELL ["/bin/bash", "-c"]
+
 # Set metadata
 LABEL maintainer="gynecoloji"
 LABEL description="Docker image for Advanced RNA-seq Analysis Pipeline"
@@ -15,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     git \
     curl \
-    openjdk-11-jdk \
+    openjdk-17-jdk \
     libz-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -30,8 +33,13 @@ RUN conda env create -f /pipeline/envs/snakemake.yaml && \
     conda env create -f /pipeline/envs/salmon.yaml && \
     conda clean -a -y
 
-# Initialize conda for bash
-RUN conda init bash
+# Initialize conda and set default environment
+RUN source /opt/conda/etc/profile.d/conda.sh && \
+    conda init bash && \
+    echo "conda activate snakemake" >> ~/.bashrc
+
+# Add snakemake environment to PATH (so it works with --no-home)
+ENV PATH="/opt/conda/envs/snakemake/bin:$PATH"
 
 # Copy the entire pipeline
 COPY . /pipeline/
