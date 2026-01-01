@@ -1,6 +1,8 @@
 # Advanced RNA-seq Analysis Pipeline
 A comprehensive Snakemake workflow for RNA-seq data analysis that combines alignment-based quantification (HISAT2/featureCounts), alignment-free quantification (Salmon), and extensive quality control metrics in a single, easy-to-use pipeline.
 
+**🐳 Now with Docker support for easy deployment!**
+
 ## 📚 Table of Contents
 
 - [Overview](#overview)
@@ -8,11 +10,16 @@ A comprehensive Snakemake workflow for RNA-seq data analysis that combines align
 - [Workflow Diagram](#workflow-diagram)
 - [Requirements](#requirements)
 - [Installation](#installation)
+  - [Option 1: Docker (Recommended)](#option-1-docker-recommended)
+  - [Option 2: Local Conda Installation](#option-2-local-conda-installation)
 - [Usage](#usage)
+  - [Docker Usage](#docker-usage)
+  - [Local Usage](#local-usage)
 - [Input Requirements](#input-requirements)
 - [Output Description](#output-description)
 - [Parameters](#parameters)
 - [Conda Environments](#conda-environments)
+- [Troubleshooting](#troubleshooting)
 - [License](#license)
 - [Contact](#contact)
 
@@ -61,12 +68,40 @@ The workflow consists of three main component pipelines:
 
 ## 🛠️ Requirements
 
+### For Docker (Recommended)
+- Docker ≥ 20.10
+- Docker Compose ≥ 1.29
+- 64GB+ RAM recommended
+- 20+ CPU cores recommended for optimal performance
+
+### For Local Installation
 - Snakemake ≥ 7.0
 - Conda (for environment management)
 - 64GB+ RAM recommended
 - 20+ CPU cores recommended for optimal performance
 
 ## 📥 Installation
+
+### Option 1: Docker (Recommended)
+
+**Step 1: Clone the repository**
+```bash
+git clone https://github.com/gynecoloji/SnakeMake_RNAseq.git
+cd SnakeMake_RNAseq
+```
+
+**Step 2: Build the Docker image**
+```bash
+# Using Docker
+docker build -t rnaseq-pipeline:latest .
+
+# Or using Docker Compose (easier)
+docker-compose build
+```
+
+That's it! All dependencies are included in the container.
+
+### Option 2: Local Conda Installation
 
 Clone the repository:
 
@@ -93,6 +128,88 @@ conda env create -f envs/salmon.yaml
 
 ## 🚀 Usage
 
+### Docker Usage
+
+**Quick Start with Docker Compose (Easiest)**
+
+1. Place your FASTQ files in the `data/` directory
+2. Place reference files in the `ref/` directory
+3. Run the pipeline:
+
+```bash
+# Run all three pipelines sequentially
+docker-compose up
+
+# Or run in detached mode
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+**Advanced Docker Usage**
+
+```bash
+# Run with Docker directly
+docker run --rm \
+  -v $(pwd)/data:/pipeline/data \
+  -v $(pwd)/ref:/pipeline/ref \
+  -v $(pwd)/results:/pipeline/results \
+  -v $(pwd)/logs:/pipeline/logs \
+  rnaseq-pipeline:latest
+
+# Dry run (check what will be executed)
+docker run --rm \
+  -v $(pwd)/data:/pipeline/data \
+  -v $(pwd)/ref:/pipeline/ref \
+  rnaseq-pipeline:latest --dry-run
+
+# Run only core RNA-seq pipeline
+docker run --rm \
+  -v $(pwd)/data:/pipeline/data \
+  -v $(pwd)/ref:/pipeline/ref \
+  -v $(pwd)/results:/pipeline/results \
+  rnaseq-pipeline:latest --pipeline rna --cores 10
+
+# Run only QC analysis
+docker run --rm \
+  -v $(pwd)/data:/pipeline/data \
+  -v $(pwd)/ref:/pipeline/ref \
+  -v $(pwd)/results:/pipeline/results \
+  rnaseq-pipeline:latest --pipeline qc
+
+# Run only Salmon quantification
+docker run --rm \
+  -v $(pwd)/data:/pipeline/data \
+  -v $(pwd)/ref:/pipeline/ref \
+  -v $(pwd)/results:/pipeline/results \
+  rnaseq-pipeline:latest --pipeline salmon
+
+# Interactive shell for debugging
+docker run --rm -it \
+  -v $(pwd)/data:/pipeline/data \
+  -v $(pwd)/ref:/pipeline/ref \
+  -v $(pwd)/results:/pipeline/results \
+  rnaseq-pipeline:latest --shell
+
+# Using docker-compose for specific pipelines
+docker-compose run rnaseq-pipeline --pipeline rna --cores 15
+docker-compose run rnaseq-pipeline --dry-run
+docker-compose run rnaseq-pipeline --shell
+```
+
+**Optional: Jupyter Notebook for Analysis**
+
+```bash
+# Start Jupyter notebook server
+docker-compose --profile jupyter up jupyter
+
+# Access at: http://localhost:8888
+# Token: rnaseq
+```
+
+### Local Usage
+
 1. Place paired-end FASTQ files in the `data/` directory following the naming convention:
    - `{sample}_R1_001.fastq.gz`
    - `{sample}_R2_001.fastq.gz`
@@ -106,11 +223,20 @@ conda env create -f envs/salmon.yaml
 3. Run the workflow:
 
 ```bash
-# Dry run to verify
-snakemake -n -s snakefile_name
+# Activate snakemake environment
+conda activate snakemake
 
-# Run with 20 cores
-snakemake --use-conda --cores 20 -s snakefile_name -p
+# Dry run to verify
+snakemake -n -s snakefile_RNA
+
+# Run core RNA-seq pipeline with 20 cores
+snakemake --use-conda --cores 20 -s snakefile_RNA -p
+
+# Run QC pipeline
+snakemake --use-conda --cores 20 -s snakefile_RNAQC -p
+
+# Run Salmon pipeline
+snakemake --use-conda --cores 20 -s snakefile_salmon -p
 ```
 
 ## 📁 Input Requirements
@@ -121,6 +247,12 @@ snakemake --use-conda --cores 20 -s snakefile_name -p
   - GTF gene annotation file (ENSEMBL format)
   - BED file for RSeQC tools
   - Salmon indices (standard and decoy-aware)
+
+**Note**: When using Docker, mount these directories:
+- `./data` → `/pipeline/data` (FASTQ files)
+- `./ref` → `/pipeline/ref` (reference files)
+- `./results` → `/pipeline/results` (output)
+- `./logs` → `/pipeline/logs` (log files)
 
 ## 📊 Output Description
 
@@ -174,6 +306,46 @@ The workflow uses four Conda environments:
 3. **RSeQC.yaml**: RSeQC tools for RNA-specific QC
 4. **salmon.yaml**: Salmon for transcript quantification
 
+## 🔧 Troubleshooting
+
+### Docker Issues
+
+**Problem**: Container can't access data files
+```bash
+# Solution: Check volume mounts and file permissions
+ls -la data/
+docker run --rm -v $(pwd)/data:/pipeline/data rnaseq-pipeline:latest ls -la /pipeline/data
+```
+
+**Problem**: Out of memory
+```bash
+# Solution: Increase Docker memory limit in Docker Desktop settings
+# Or reduce cores: --cores 10
+```
+
+**Problem**: Permission denied on results
+```bash
+# Solution: Fix ownership
+sudo chown -R $USER:$USER results/ logs/
+```
+
+### Pipeline Issues
+
+**Problem**: "No FASTQ files found"
+- Ensure files follow naming pattern: `{sample}_R1_001.fastq.gz`
+- Check they are in the correct directory
+
+**Problem**: Reference files not found
+- Update paths in Snakefiles
+- Ensure reference files are in `ref/` directory
+
+**Problem**: Conda environment conflicts
+```bash
+# Rebuild environments
+conda env remove -n snakemake
+conda env create -f envs/snakemake.yaml
+```
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
@@ -184,5 +356,11 @@ For questions or feedback, please open an issue on the GitHub repository or cont
 
 ---
 
-Last updated: Dec 11th, 2025  
+**Pro Tips:**
+- Use `--dry-run` first to check the workflow
+- Monitor resource usage with `docker stats` or `htop`
+- Check MultiQC report for overall quality assessment
+- Use the interactive shell for debugging: `docker-compose run rnaseq-pipeline --shell`
+
+Last updated: Dec 29th, 2025  
 Created by: gynecoloji
