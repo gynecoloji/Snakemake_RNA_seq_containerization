@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  rnaseq-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rnaseq-pipeline:latest
+    container_name: snakemake_rnaseq
+    
+    volumes:
+      # Mount data directory
+      - ./data:/pipeline/data
+      
+      # Mount reference directory
+      - ./ref:/pipeline/ref
+      
+      # Mount results directory
+      - ./results:/pipeline/results
+      
+      # Mount logs directory
+      - ./logs:/pipeline/logs
+      
+      # Mount Snakefiles (for easy editing without rebuild)
+      - ./snakefile_RNA:/pipeline/snakefile_RNA
+      - ./snakefile_RNAQC:/pipeline/snakefile_RNAQC
+      - ./snakefile_salmon:/pipeline/snakefile_salmon
+    
+    # Resource limits (adjust based on your system)
+    deploy:
+      resources:
+        limits:
+          cpus: '20'
+          memory: 64G
+    
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+    
+    # Override entrypoint for custom commands
+    # command: ["bash"]
+    
+    environment:
+      - THREADS=20
+      - SNAKEMAKE_CORES=20
+
+  # Optional: Jupyter notebook service for analysis
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rnaseq-pipeline:latest
+    container_name: rnaseq_jupyter
+    
+    ports:
+      - "8888:8888"
+    
+    volumes:
+      - ./:/pipeline
+    
+    command: >
+      bash -c "conda run -n snakemake pip install jupyter &&
+               conda run -n snakemake jupyter notebook
+               --ip=0.0.0.0 --port=8888 --no-browser
+               --allow-root --NotebookApp.token='rnaseq'"
+    
+    profiles:
+      - jupyter

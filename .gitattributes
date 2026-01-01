@@ -1,0 +1,13 @@
+# Default: use LF
+* text=auto eol=lf
+
+# Shell scripts must be LF
+*.sh text eol=lf
+
+# Docker / config files
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Markdown is safe as LF
+*.md text eol=lf

@@ -1,0 +1,91 @@
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (already copied)
+*.md
+!README.md
+
+# Docker files (avoid recursion)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Large data files (should be mounted as volumes)
+data/*.fastq.gz
+data/*.fq.gz
+results/
+logs/
+
+# Reference files (should be mounted as volumes)
+ref/*.gtf
+ref/*.fa
+ref/*.fasta
+ref/*.ht2
+ref/*.bed
+ref/ENSEMBL/
+ref/Salmon_index_*/
+*.2bit
+
+# Build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+*.orig
+*.log
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
+
+# Environment files
+.env
+.env.local
+
+# Coverage and test files
+coverage/
+.pytest_cache/
+*.coverage
+
+# Conda environments (will be built inside container)
+env/
+venv/
+ENV/
+
+# Archive files
+*.zip
+*.tar
+*.gz
+*.7z
+*.rar
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# MultiQC data (generated during run)
+multiqc_data/
