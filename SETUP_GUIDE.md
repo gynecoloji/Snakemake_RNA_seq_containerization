@@ -190,6 +190,42 @@ volumes:
   - ./snakefile_RNA:/pipeline/snakefile_RNA
 ```
 
+### Tune Pipeline Parameters via `config.yaml`
+
+Most parameters (reference paths, per-rule threads, fastp/HISAT2/featureCounts/Salmon flags, Qualimap memory, library protocol) live in **`config.yaml`** at the repo root. Edit it once instead of touching the snakefiles:
+
+```yaml
+# config.yaml — examples
+references:
+  hisat2_index: "ref/mouse/genome"
+  gtf:          "ref/Mus_musculus.GRCm39.110.gtf"
+
+featurecounts:
+  strandedness: 1            # 0 = unstranded, 1 = forward, 2 = reverse
+
+threads:
+  hisat2: 8                  # ↓ for low-RAM machines
+```
+
+**Override at runtime without editing the file:**
+
+```bash
+# Use a different config
+snakemake --configfile my_config.yaml --cores 20 -s snakefile_RNA
+
+# Override single key
+snakemake --config references=hisat2_index=ref/mouse/genome --cores 20 -s snakefile_RNA
+
+# Inside Docker — bind-mount your config over the baked-in default
+docker run --rm \
+  -v $(pwd)/data:/pipeline/data \
+  -v $(pwd)/ref:/pipeline/ref \
+  -v $(pwd)/config.yaml:/pipeline/config.yaml \
+  rnaseq-pipeline:latest
+```
+
+See the full annotated reference in [`config.yaml`](config.yaml).
+
 ---
 
 ## 📊 Best Practices

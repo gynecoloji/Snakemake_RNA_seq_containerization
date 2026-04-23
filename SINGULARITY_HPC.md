@@ -53,7 +53,7 @@ Singularity and Apptainer are both designed specifically for HPC environments:
 module load singularity   # or: module load apptainer
 
 # 2. Pull the container (use `apptainer pull` if that's what your cluster has)
-singularity pull rnaseq_pipeline.sif docker://yourusername/rnaseq-pipeline:latest
+singularity pull rnaseq_pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
 
 # 3. Run the pipeline
 singularity exec \
@@ -117,7 +117,7 @@ Thank you!
 
 ```bash
 # Pull and convert in one step
-singularity pull rnaseq_pipeline.sif docker://gynecoloji/rnaseq-pipeline:latest
+singularity pull rnaseq_pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
 
 # This creates: rnaseq_pipeline.sif (~2.5 GB)
 ```
@@ -199,6 +199,30 @@ singularity exec \
 # Multiple mounts
 -B $(pwd)/data:/pipeline/data,$(pwd)/ref:/pipeline/ref
 ```
+
+### Override `config.yaml` at runtime
+
+The image ships with a default `/pipeline/config.yaml`, but on HPC you usually want **your** paths and thread counts. Bind-mount your edited copy over the default — no rebuild required:
+
+```bash
+singularity exec \
+  -B $(pwd)/data:/pipeline/data \
+  -B $(pwd)/ref:/pipeline/ref \
+  -B $(pwd)/results:/pipeline/results \
+  -B $(pwd)/logs:/pipeline/logs \
+  -B $(pwd)/config.yaml:/pipeline/config.yaml:ro \
+  rnaseq_pipeline.sif \
+  snakemake --use-conda --cores ${SLURM_CPUS_PER_TASK} -s /pipeline/snakefile_RNA -p
+```
+
+Or pass an out-of-tree config explicitly:
+
+```bash
+snakemake --use-conda --configfile /pipeline/data/my_hpc_config.yaml \
+          --cores ${SLURM_CPUS_PER_TASK} -s /pipeline/snakefile_RNA -p
+```
+
+See README.md → **Configuration** for the full list of tunable keys.
 
 ### Running Individual Pipelines
 

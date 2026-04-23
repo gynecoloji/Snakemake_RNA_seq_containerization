@@ -55,6 +55,14 @@ docker run --rm \
   -v $(pwd)/results:/pipeline/results \
   rnaseq-pipeline:latest --pipeline rna --cores 10
 
+# Override the baked-in config.yaml at runtime
+docker run --rm \
+  -v $(pwd)/data:/pipeline/data \
+  -v $(pwd)/ref:/pipeline/ref \
+  -v $(pwd)/results:/pipeline/results \
+  -v $(pwd)/config.yaml:/pipeline/config.yaml \
+  rnaseq-pipeline:latest
+
 # Help
 docker run --rm rnaseq-pipeline:latest --help
 ```
@@ -85,6 +93,7 @@ docker system prune -a
 
 ```
 SnakeMake_RNAseq/
+├── config.yaml              # All tunable parameters (mountable)
 ├── data/                    # Mount: Your FASTQ files here
 │   ├── sample1_R1_001.fastq.gz
 │   └── sample1_R2_001.fastq.gz
@@ -95,6 +104,21 @@ SnakeMake_RNAseq/
 ├── results/                 # Mount: Pipeline outputs
 └── logs/                    # Mount: Log files
 ```
+
+## Configuration
+
+All tunable parameters live in **`config.yaml`** (reference paths, per-rule threads, fastp/HISAT2/featureCounts/Salmon flags, Qualimap protocol). Edit it directly, or override at runtime:
+
+```bash
+# Bind-mount your custom config over the baked-in default
+docker run --rm \
+  -v $(pwd)/config.yaml:/pipeline/config.yaml \
+  -v $(pwd)/data:/pipeline/data \
+  -v $(pwd)/ref:/pipeline/ref \
+  rnaseq-pipeline:latest
+```
+
+See README.md → **Configuration** for the full key reference.
 
 ## Pipeline Options
 

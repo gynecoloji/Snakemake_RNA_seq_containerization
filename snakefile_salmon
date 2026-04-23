@@ -1,64 +1,77 @@
 import os
 import glob
 
+configfile: "config.yaml"
+
+# ---- Resolve config shortcuts -------------------------------------------------
+RESULTS = config["paths"]["results_dir"]
+LOGS    = config["paths"]["logs_dir"]
+
+SALMON_INDEX       = config["references"]["salmon_index"]
+SALMON_DECOY_INDEX = config["references"]["salmon_decoy_index"]
+
 # Automatically detect samples
-SAMPLES, = glob_wildcards("results/trimmed/{sample}_R1.trimmed.fastq.gz")
+SAMPLES, = glob_wildcards(f"{RESULTS}/trimmed/{{sample}}_R1.trimmed.fastq.gz")
 
 rule all:
     input:
-        expand("results/quants/{sample}_quant/quant.sf", sample=SAMPLES),
-        expand("results/quants_decoy/{sample}_quant/quant.sf", sample=SAMPLES)
+        expand(f"{RESULTS}/quants/{{sample}}_quant/quant.sf", sample=SAMPLES),
+        expand(f"{RESULTS}/quants_decoy/{{sample}}_quant/quant.sf", sample=SAMPLES)
 
 # Rule 1: Salmon quantification (standard index)
 rule salmon_quant:
     input:
-        r1="results/trimmed/{sample}_R1.trimmed.fastq.gz",
-        r2="results/trimmed/{sample}_R2.trimmed.fastq.gz"
+        r1=f"{RESULTS}/trimmed/{{sample}}_R1.trimmed.fastq.gz",
+        r2=f"{RESULTS}/trimmed/{{sample}}_R2.trimmed.fastq.gz"
     output:
-        "results/quants/{sample}_quant/quant.sf"
+        f"{RESULTS}/quants/{{sample}}_quant/quant.sf"
     log:
-        "logs/salmon/{sample}_salmon.log"
-    threads: 20
+        f"{LOGS}/salmon/{{sample}}_salmon.log"
+    threads: config["threads"]["salmon"]
     params:
-        index="ref/Salmon_index_Grch38"
+        index=SALMON_INDEX,
+        lib_type=config["salmon"]["lib_type"],
+        extra=config["salmon"]["extra"]
     conda:
         "envs/salmon.yaml"
     shell:
         """
-        mkdir -p results/quants logs/salmon
+        mkdir -p {RESULTS}/quants {LOGS}/salmon
         salmon quant \
             -i {params.index} \
-            -l A \
+            -l {params.lib_type} \
             -1 {input.r1} \
             -2 {input.r2} \
             -p {threads} \
-            --validateMappings \
-            -o results/quants/{wildcards.sample}_quant > {log} 2>&1
+            {params.extra} \
+            -o {RESULTS}/quants/{wildcards.sample}_quant > {log} 2>&1
         """
 
 # Rule 2: Salmon quantification (decoy-aware index)
 rule salmon_decoy_quant:
     input:
-        r1="results/trimmed/{sample}_R1.trimmed.fastq.gz",
-        r2="results/trimmed/{sample}_R2.trimmed.fastq.gz"
+        r1=f"{RESULTS}/trimmed/{{sample}}_R1.trimmed.fastq.gz",
+        r2=f"{RESULTS}/trimmed/{{sample}}_R2.trimmed.fastq.gz"
     output:
-        "results/quants_decoy/{sample}_quant/quant.sf"
+        f"{RESULTS}/quants_decoy/{{sample}}_quant/quant.sf"
     log:
-        "logs/salmon/{sample}_salmon_decoy.log"
-    threads: 20
+        f"{LOGS}/salmon/{{sample}}_salmon_decoy.log"
+    threads: config["threads"]["salmon"]
     params:
-        index="ref/Salmon_index_decoy_Grch38"
+        index=SALMON_DECOY_INDEX,
+        lib_type=config["salmon"]["lib_type"],
+        extra=config["salmon"]["extra"]
     conda:
         "envs/salmon.yaml"
     shell:
         """
-        mkdir -p results/quants_decoy logs/salmon
+        mkdir -p {RESULTS}/quants_decoy {LOGS}/salmon
         salmon quant \
             -i {params.index} \
-            -l A \
+            -l {params.lib_type} \
             -1 {input.r1} \
             -2 {input.r2} \
             -p {threads} \
-            --validateMappings \
-            -o results/quants_decoy/{wildcards.sample}_quant > {log} 2>&1
+            {params.extra} \
+            -o {RESULTS}/quants_decoy/{wildcards.sample}_quant > {log} 2>&1
         """

@@ -29,7 +29,7 @@ docker-compose up
 
 # Or run with Singularity / Apptainer (HPC)
 # Apptainer is a drop-in replacement — substitute `apptainer` for `singularity` below
-singularity pull rnaseq_pipeline.sif docker://gynecoloji/rnaseq-pipeline:latest
+singularity pull rnaseq_pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
 singularity exec -B $(pwd)/data:/pipeline/data rnaseq_pipeline.sif snakemake --cores 20
 ```
 
@@ -97,7 +97,7 @@ Raw FASTQ files
 **Understanding the Pipeline:**
 - 📋 [**Input Requirements**](#input-requirements) - Data preparation checklist
 - 📊 [**Output Structure**](#output-description) - What gets generated
-- ⚙️ [**Parameters**](#parameters) - Configuration options
+- ⚙️ [**Configuration**](#configuration) - All tunable parameters in `config.yaml`
 
 **Need Help?**
 - 🐛 [**Troubleshooting**](#troubleshooting) - Common issues & solutions
@@ -372,6 +372,88 @@ All reference data is expected under the `ref/` directory at the project root. T
 
 ---
 
+## ⚙️ Configuration
+
+All tunable parameters live in a single file at the repo root: **`config.yaml`**. The three snakefiles read it via `configfile: "config.yaml"`, so you can change paths, threads, or tool flags without touching any pipeline code.
+
+### Override at runtime
+
+```bash
+# Use a custom config file
+snakemake --configfile my_config.yaml --cores 20 -s snakefile_RNA
+
+# Override a single value
+snakemake --config references=hisat2_index=ref/mouse/genome --cores 20 -s snakefile_RNA
+
+# In Docker — mount your config over the baked-in default
+docker run --rm \
+  -v $(pwd)/data:/pipeline/data \
+  -v $(pwd)/ref:/pipeline/ref \
+  -v $(pwd)/config.yaml:/pipeline/config.yaml \
+  gynecoloji/rnaseq_pipeline:latest
+
+# In Singularity / Apptainer
+singularity exec \
+  -B $(pwd)/data:/pipeline/data \
+  -B $(pwd)/ref:/pipeline/ref \
+  -B $(pwd)/config.yaml:/pipeline/config.yaml \
+  rnaseq_pipeline.sif \
+  snakemake --use-conda --cores 20 -s /pipeline/snakefile_RNA
+```
+
+### Configurable sections
+
+| Section | Keys | What it controls |
+|---|---|---|
+| `genome` | `species`, `build`, `release` | Informational metadata for logs/docs |
+| `paths` | `data_dir`, `results_dir`, `logs_dir`, `ref_dir` | Where inputs/outputs live |
+| `samples` | `r1_suffix`, `r2_suffix` | FASTQ naming convention |
+| `references` | `hisat2_index`, `gtf`, `bed`, `picard_jar`, `salmon_index`, `salmon_decoy_index` | Reference file paths |
+| `threads` | `fastqc`, `fastp`, `hisat2`, `samtools`, `samtools_byname`, `featurecounts`, `multiqc`, `picard`, `qualimap_bamqc`, `qualimap_rnaseq`, `rseqc`, `salmon` | Per-rule CPU allocation |
+| `fastp` | `extra` | Extra fastp flags (e.g. SE vs PE, custom adapters) |
+| `hisat2` | `extra` | Library/alignment params |
+| `samtools_filter` | `require_flags`, `exclude_flags`, `unique_tag` | BAM filter rules |
+| `featurecounts` | `feature_type`, `attribute`, `strandedness`, `extra` | Counting strategy |
+| `qualimap` | `java_mem`, `protocol` | JVM heap + library protocol |
+| `salmon` | `lib_type`, `extra` | Library type + extra Salmon flags |
+
+### Common adjustments
+
+**Switch to a different organism (e.g. mouse):**
+```yaml
+genome:
+  species: "Mus_musculus"
+  build: "GRCm39"
+  release: "110"
+references:
+  hisat2_index: "ref/mouse/genome"
+  gtf:          "ref/Mus_musculus.GRCm39.110.gtf"
+  bed:          "ref/mm10.bed"
+```
+
+**Switch to stranded RNA-seq (forward-stranded library):**
+```yaml
+featurecounts:
+  strandedness: 1
+qualimap:
+  protocol: "strand-specific-forward"
+```
+
+**Run on a low-RAM machine:**
+```yaml
+threads:
+  hisat2: 8
+  samtools: 8
+  featurecounts: 8
+  salmon: 8
+qualimap:
+  java_mem: "8G"
+```
+
+📖 See [`config.yaml`](config.yaml) for the full annotated file.
+
+---
+
 ## 📊 Output Description
 
 ### Directory Structure
@@ -561,7 +643,7 @@ This pipeline integrates tools developed by the bioinformatics community. Specia
 | Resource | Link |
 |----------|------|
 | 🏠 **Home** | [GitHub Repository](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization) |
-| 🐳 **Docker Hub** | [gynecoloji/rnaseq-pipeline](https://hub.docker.com/r/gynecoloji/rnaseq_pipeline) |
+| 🐳 **Docker Hub** | [gynecoloji/rnaseq_pipeline](https://hub.docker.com/r/gynecoloji/rnaseq_pipeline) |
 | 📖 **Documentation** | [Guides & Tutorials](#documentation) |
 | 🐛 **Issues** | [Report Problems](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/issues) |
 | ⭐ **Star** | [Star this repo](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization) |
