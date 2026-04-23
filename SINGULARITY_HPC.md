@@ -1,10 +1,23 @@
-# Running RNA-seq Pipeline on HPC with Singularity
+# Running RNA-seq Pipeline on HPC with Singularity / Apptainer
 
-A complete guide for running the containerized RNA-seq analysis pipeline on High-Performance Computing (HPC) clusters using Singularity.
+A complete guide for running the containerized RNA-seq analysis pipeline on High-Performance Computing (HPC) clusters using **Singularity** or **Apptainer**.
+
+## 🔁 Singularity vs. Apptainer
+
+[Apptainer](https://apptainer.org/) is the community-maintained fork of Singularity (moved under the Linux Foundation in 2021) and has become the default on many HPC systems. From a user perspective the two are interchangeable:
+
+- **Identical CLI** — every `singularity <subcommand>` in this guide works as `apptainer <subcommand>` (e.g. `apptainer pull`, `apptainer exec`, `apptainer build`).
+- **Same image format (`.sif`)** — images built with one tool run under the other without conversion.
+- **Same bind-mount flags** — `-B`, `--bind`, `SINGULARITYENV_*` / `APPTAINERENV_*`, etc.
+- **Compatibility shim** — most Apptainer installations provide a `singularity` symlink pointing at `apptainer`, so the commands in this guide usually work unchanged.
+
+**Which one do I have?** Run `which singularity` and `which apptainer`, or check `module avail singularity apptainer`. If only Apptainer is available and no `singularity` shim exists, add `alias singularity=apptainer` to your `~/.bashrc`, or mentally substitute `apptainer` wherever this guide says `singularity`.
+
+Throughout this guide we use `singularity` for brevity; unless explicitly noted otherwise, every command is equally valid with `apptainer`.
 
 ## 📋 Table of Contents
 
-- [Why Singularity for HPC?](#why-singularity-for-hpc)
+- [Why Singularity/Apptainer for HPC?](#why-singularity-for-hpc)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Converting Docker to Singularity](#converting-docker-to-singularity)
@@ -16,12 +29,12 @@ A complete guide for running the containerized RNA-seq analysis pipeline on High
 
 ---
 
-## 🎯 Why Singularity for HPC?
+## 🎯 Why Singularity/Apptainer for HPC?
 
-Singularity is designed specifically for HPC environments:
+Singularity and Apptainer are both designed specifically for HPC environments:
 
-| Feature | Docker | Singularity |
-|---------|--------|-------------|
+| Feature | Docker | Singularity / Apptainer |
+|---------|--------|-------------------------|
 | **Root access required** | Yes | No ✅ |
 | **User permissions** | Runs as root | Runs as user ✅ |
 | **MPI support** | Limited | Native ✅ |
@@ -29,17 +42,17 @@ Singularity is designed specifically for HPC environments:
 | **Security** | Risky for shared systems | Safe for multi-user ✅ |
 | **HPC scheduler integration** | Difficult | Easy ✅ |
 
-**Bottom line**: Singularity containers run **without root privileges** and maintain user identity, making them ideal for shared HPC systems.
+**Bottom line**: Singularity/Apptainer containers run **without root privileges** and maintain user identity, making them ideal for shared HPC systems.
 
 ---
 
 ## 🚀 Quick Start
 
 ```bash
-# 1. Load Singularity module (on HPC)
-module load singularity
+# 1. Load Singularity or Apptainer module (whichever your HPC provides)
+module load singularity   # or: module load apptainer
 
-# 2. Pull the container
+# 2. Pull the container (use `apptainer pull` if that's what your cluster has)
 singularity pull rnaseq_pipeline.sif docker://yourusername/rnaseq-pipeline:latest
 
 # 3. Run the pipeline
@@ -58,31 +71,40 @@ singularity exec \
 
 ### Option 1: Using Module System (Recommended)
 
-Most HPC clusters have Singularity pre-installed:
+Most HPC clusters have Singularity or Apptainer pre-installed. Check for either:
 
 ```bash
-# Check available versions (if singularity not available, try module spider singularity)
+# Check for available module names (try both — clusters vary)
 module avail singularity
+module avail apptainer
+# Also useful if neither shows up immediately:
+module spider singularity
+module spider apptainer
 
-# Load Singularity
-module load singularity
+# Load whichever your cluster provides
+module load singularity   # or: module load apptainer
 
 # Verify installation
-singularity --version
-# Expected: singularity version 3.x.x or newer
+singularity --version     # Expected: singularity version 3.x.x or newer
+# -- or --
+apptainer --version       # Expected: apptainer version 1.x.x or newer
 ```
+
+Both tools accept the same subcommands; this guide uses `singularity` consistently.
 
 ### Option 2: Request Installation
 
-If Singularity is not available, contact your HPC administrator:
+If neither Singularity nor Apptainer is available, contact your HPC administrator:
 
 ```
-Subject: Singularity Installation Request
+Subject: Singularity / Apptainer Installation Request
 
 Dear HPC Support,
 
-Could you please install Singularity (https://sylabs.io/singularity/) 
-on the cluster? It's needed for containerized bioinformatics workflows.
+Could you please install Apptainer (https://apptainer.org/) — the
+community-maintained successor to Singularity — or Singularity CE
+(https://sylabs.io/singularity/) on the cluster? Either is needed
+for containerized bioinformatics workflows.
 
 Thank you!
 ```
@@ -349,15 +371,19 @@ singularity exec ... snakemake ...
 cp -r results/ logs/ $HOME/project/
 ```
 
-### 2. **Set Singularity Cache Directory**
+### 2. **Set Singularity/Apptainer Cache Directory**
 
 ```bash
-# Add to your job script or ~/.bashrc
+# Singularity: add to your job script or ~/.bashrc
 export SINGULARITY_CACHEDIR=/scratch/$USER/singularity_cache
 mkdir -p $SINGULARITY_CACHEDIR
+
+# Apptainer uses its own env var (set both if your cluster provides both tools):
+export APPTAINER_CACHEDIR=/scratch/$USER/apptainer_cache
+mkdir -p $APPTAINER_CACHEDIR
 ```
 
-This prevents filling your home directory with cached files.
+This prevents filling your home directory with cached layer files.
 
 ### 3. **Use Absolute Paths**
 
@@ -453,8 +479,8 @@ tail -f logs/hisat2/*.log
 ## ✅ HPC Workflow Checklist
 
 **Before submission:**
-- [ ] Load Singularity module
-- [ ] Pull/build Singularity image
+- [ ] Load Singularity or Apptainer module
+- [ ] Pull/build `.sif` image
 - [ ] Verify data is accessible and sample name nomenclature (it should match the pattern indicated in snakemake file: {sample_name}_R1_001.fastq.gz)
 - [ ] Check reference files exist
 - [ ] Test with dry run (`-n`)
@@ -481,7 +507,9 @@ tail -f logs/hisat2/*.log
 **HPC-specific issues:**
 1. Check cluster documentation
 2. Contact your HPC support team
-3. Check Singularity documentation: https://sylabs.io/docs/
+3. Check the relevant docs:
+   - Apptainer: https://apptainer.org/docs/
+   - Singularity CE (Sylabs): https://sylabs.io/docs/
 
 **Pipeline issues:**
 1. GitHub Issues: https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/issues

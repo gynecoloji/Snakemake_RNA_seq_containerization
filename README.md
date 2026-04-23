@@ -27,7 +27,8 @@ cp /path/to/references/* ref/
 docker-compose build
 docker-compose up
 
-# Or run with Singularity (HPC)
+# Or run with Singularity / Apptainer (HPC)
+# Apptainer is a drop-in replacement — substitute `apptainer` for `singularity` below
 singularity pull rnaseq_pipeline.sif docker://gynecoloji/rnaseq-pipeline:latest
 singularity exec -B $(pwd)/data:/pipeline/data rnaseq_pipeline.sif snakemake --cores 20
 ```
@@ -130,14 +131,17 @@ docker-compose run rnaseq-pipeline --help
 
 ---
 
-### Option 2: Singularity (Recommended for HPC)
+### Option 2: Singularity / Apptainer (Recommended for HPC)
 
-**Requirements:** Singularity ≥ 3.x (usually pre-installed on HPC)
+**Requirements:** Singularity ≥ 3.x **or** Apptainer ≥ 1.0 (usually pre-installed on HPC)
+
+> **Apptainer note:** [Apptainer](https://apptainer.org/) is the community-maintained fork of Singularity and is now the default on many HPC systems. Its CLI is a drop-in replacement — every `singularity <subcommand>` in this repo also works as `apptainer <subcommand>`. On most Apptainer installations, `singularity` is also provided as a compatibility symlink, so the commands below work unchanged. If not, either swap `singularity` → `apptainer`, or add a shell alias: `alias singularity=apptainer`.
+
 ```bash
-# On HPC cluster - load module
-module load singularity
+# On HPC cluster - load module (name may vary: singularity, apptainer, or singularity-ce)
+module load singularity   # or: module load apptainer
 
-# Pull pre-built container
+# Pull pre-built container (use `apptainer` in place of `singularity` if that's what your cluster has)
 singularity pull rnaseq_pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
 
 # Or build from local Docker image
@@ -232,7 +236,9 @@ snakemake -n -s snakefile_RNA
 
 ---
 
-### Singularity Usage (HPC)
+### Singularity / Apptainer Usage (HPC)
+
+> Commands below use `singularity`. If your cluster has Apptainer, either substitute `apptainer`, rely on the `singularity` compatibility symlink Apptainer ships, or add `alias singularity=apptainer` to your shell profile. Semantics of `exec`, `pull`, `build`, `-B`, etc. are identical.
 
 **Interactive execution:**
 ```bash
