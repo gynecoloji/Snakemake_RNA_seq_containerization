@@ -130,5 +130,5 @@ rule multiqc:
     shell:
         """
         mkdir -p logs/multiqc
-        multiqc results/ -o results/ &> {log}
+        multiqc -f results/ -o results/ &> {log}
         """
