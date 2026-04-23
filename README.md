@@ -311,11 +311,12 @@ project/
 │   ├── sample1_R2_001.fastq.gz
 │   ├── sample2_R1_001.fastq.gz
 │   └── sample2_R2_001.fastq.gz
-├── ref/                           # Reference files
+├── ref/                           # Reference files (see "Reference Files" below)
 │   ├── ENSEMBL/
-│   │   └── genome.*.ht2          # HISAT2 index files
-│   ├── Homo_sapiens.GRCh38.102.gtf
-│   ├── ENSEMBL_hg38.bed          # For RSeQC
+│   │   └── genome.*.ht2          # HISAT2 index files (8 parts)
+│   ├── Homo_sapiens.GRCh38.102.gtf # GTF annotation
+│   ├── ENSEMBL_hg38.bed          # BED annotation for RSeQC
+│   ├── picard.jar                # Picard executable JAR
 │   ├── Salmon_index_Grch38/      # Standard Salmon index
 │   └── Salmon_index_decoy_Grch38/ # Decoy-aware Salmon index
 ├── results/                       # Auto-created, pipeline outputs
@@ -334,12 +335,32 @@ project/
 - `sample_1.fastq.gz` / `sample_2.fastq.gz` (wrong pattern)
 - `data_read1.fq.gz` / `data_read2.fq.gz` (wrong extension)
 
+### Reference Files (`ref/` folder)
+
+All reference data is expected under the `ref/` directory at the project root. The snakefiles reference these paths literally, so filenames and layout must match exactly (or be updated in the snakefiles — marked `# <<< UPDATE THIS`).
+
+| Path | Used by | What it is | How to obtain |
+|------|---------|------------|---------------|
+| `ref/ENSEMBL/genome.{1..8}.ht2` | `snakefile_RNA` | HISAT2 index (8 files, prefix `genome`) | `hisat2-build genome.fa ref/ENSEMBL/genome` — or download a prebuilt index from the [HISAT2 site](https://daehwankimlab.github.io/hisat2/download/) and rename the prefix to `genome` |
+| `ref/Homo_sapiens.GRCh38.102.gtf` | `snakefile_RNA`, `snakefile_RNAQC` | ENSEMBL gene annotation (GTF, uncompressed) | `wget https://ftp.ensembl.org/pub/release-102/gtf/homo_sapiens/Homo_sapiens.GRCh38.102.gtf.gz && gunzip Homo_sapiens.GRCh38.102.gtf.gz` |
+| `ref/ENSEMBL_hg38.bed` | `snakefile_RNAQC` (RSeQC) | 12-column BED of gene models for RSeQC `read_distribution.py` / `tin.py` | Download from [RSeQC reference BEDs](https://sourceforge.net/projects/rseqc/files/BED/) or convert your GTF (`gtfToGenePred` → `genePredToBed`) |
+| `ref/picard.jar` | `snakefile_RNAQC` | Picard Tools executable JAR | `wget https://github.com/broadinstitute/picard/releases/latest/download/picard.jar -O ref/picard.jar` |
+| `ref/Salmon_index_Grch38/` | `snakefile_salmon` | Standard Salmon transcriptome index (directory) | `salmon index -t transcripts.fa -i ref/Salmon_index_Grch38 -k 31` |
+| `ref/Salmon_index_decoy_Grch38/` | `snakefile_salmon` | Decoy-aware Salmon index (transcriptome + genome decoys) | Follow the [Salmon decoy-aware guide](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode); output to `ref/Salmon_index_decoy_Grch38` |
+
+**Notes:**
+- The GTF/BED above are for ENSEMBL release 102, GRCh38 (human). For other species or releases, substitute the equivalent files and update the paths in the relevant snakefile.
+- The GTF must match the genome build the HISAT2 index was constructed against, and the transcriptome used for Salmon indices.
+- Only the files required for the pipeline(s) you intend to run need to be present — e.g. if you only run `--pipeline salmon`, you can skip the HISAT2 index and `picard.jar`.
+
 ### Reference Files Checklist
 
-- [ ] **HISAT2 index** - Built from your reference genome
-- [ ] **GTF annotation** - Gene models (ENSEMBL/GENCODE)
-- [ ] **BED file** - For RSeQC (can convert from GTF)
-- [ ] **Salmon indices** - Transcriptome indices (standard + decoy)
+- [ ] **HISAT2 index** — `ref/ENSEMBL/genome.*.ht2` (for `snakefile_RNA`)
+- [ ] **GTF annotation** — `ref/Homo_sapiens.GRCh38.102.gtf` (for `snakefile_RNA`, `snakefile_RNAQC`)
+- [ ] **BED annotation** — `ref/ENSEMBL_hg38.bed` (for `snakefile_RNAQC` / RSeQC)
+- [ ] **Picard JAR** — `ref/picard.jar` (for `snakefile_RNAQC`)
+- [ ] **Salmon standard index** — `ref/Salmon_index_Grch38/` (for `snakefile_salmon`)
+- [ ] **Salmon decoy index** — `ref/Salmon_index_decoy_Grch38/` (for `snakefile_salmon`)
 
 📖 **How to prepare references:** See [SETUP_GUIDE.md](SETUP_GUIDE.md#reference-preparation)
 
@@ -556,7 +577,7 @@ This pipeline integrates tools developed by the bioinformatics community. Specia
 
 **Built with ❤️ for the bioinformatics community**
 
-Last updated: January 2025
+Last updated: April 2026
 
 [⬆ Back to Top](#advanced-rna-seq-analysis-pipeline)
 
