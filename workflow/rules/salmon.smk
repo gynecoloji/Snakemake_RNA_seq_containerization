@@ -1,0 +1,68 @@
+# Salmon transcript quantification (standard + decoy-aware). Consumes the core
+# stage's trimmed reads. Ported from the former snakefile_salmon (unchanged).
+
+
+rule salmon_all:
+    input:
+        expand(f"{RESULTS}/quants/{{sample}}_quant/quant.sf", sample=SAMPLES),
+        expand(f"{RESULTS}/quants_decoy/{{sample}}_quant/quant.sf", sample=SAMPLES),
+
+
+# Rule 1: Salmon quantification (standard index)
+rule salmon_quant:
+    input:
+        r1=f"{RESULTS}/trimmed/{{sample}}_R1.trimmed.fastq.gz",
+        r2=f"{RESULTS}/trimmed/{{sample}}_R2.trimmed.fastq.gz",
+    output:
+        f"{RESULTS}/quants/{{sample}}_quant/quant.sf",
+    log:
+        f"{LOGS}/salmon/{{sample}}_salmon.log",
+    threads: config["threads"]["salmon"]
+    params:
+        index=SALMON_INDEX,
+        lib_type=config["salmon"]["lib_type"],
+        extra=config["salmon"]["extra"],
+    conda:
+        "../envs/salmon.yaml"
+    shell:
+        """
+        mkdir -p {RESULTS}/quants {LOGS}/salmon
+        salmon quant \
+            -i {params.index} \
+            -l {params.lib_type} \
+            -1 {input.r1} \
+            -2 {input.r2} \
+            -p {threads} \
+            {params.extra} \
+            -o {RESULTS}/quants/{wildcards.sample}_quant > {log} 2>&1
+        """
+
+
+# Rule 2: Salmon quantification (decoy-aware index)
+rule salmon_decoy_quant:
+    input:
+        r1=f"{RESULTS}/trimmed/{{sample}}_R1.trimmed.fastq.gz",
+        r2=f"{RESULTS}/trimmed/{{sample}}_R2.trimmed.fastq.gz",
+    output:
+        f"{RESULTS}/quants_decoy/{{sample}}_quant/quant.sf",
+    log:
+        f"{LOGS}/salmon/{{sample}}_salmon_decoy.log",
+    threads: config["threads"]["salmon"]
+    params:
+        index=SALMON_DECOY_INDEX,
+        lib_type=config["salmon"]["lib_type"],
+        extra=config["salmon"]["extra"],
+    conda:
+        "../envs/salmon.yaml"
+    shell:
+        """
+        mkdir -p {RESULTS}/quants_decoy {LOGS}/salmon
+        salmon quant \
+            -i {params.index} \
+            -l {params.lib_type} \
+            -1 {input.r1} \
+            -2 {input.r2} \
+            -p {threads} \
+            {params.extra} \
+            -o {RESULTS}/quants_decoy/{wildcards.sample}_quant > {log} 2>&1
+        """
