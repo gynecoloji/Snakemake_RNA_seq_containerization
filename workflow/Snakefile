@@ -1,0 +1,28 @@
+# RNA-seq analysis — Snakemake Workflow Catalog entry point. A single
+# `snakemake --use-conda` builds the core stage, advanced QC, and Salmon
+# quantification in dependency order (unified DAG). Run a subset with the
+# rna_all / qc_all / salmon_all targets:
+#
+#   snakemake --use-conda --cores 20                 # everything
+#   snakemake --use-conda --cores 20 rna_all         # core RNA-seq only
+#   snakemake --use-conda --cores 20 qc_all          # advanced QC only
+#   snakemake --use-conda --cores 20 salmon_all      # Salmon only
+#
+# Reference genomes/annotation are provided by the user under ref/ (see README).
+
+from snakemake.utils import min_version
+
+min_version("8.0")
+
+
+configfile: "config/config.yaml"
+
+
+include: "rules/common.smk"
+include: "rules/rnaseq.smk"
+
+
+rule all:
+    input:
+        rules.rna_all.input,
+    default_target: True

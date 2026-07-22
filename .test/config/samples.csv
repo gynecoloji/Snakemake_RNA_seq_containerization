@@ -1,0 +1,5 @@
+sample_id,condition
+test_ctrl_1,control
+test_ctrl_2,control
+test_trt_1,treatment
+test_trt_2,treatment
