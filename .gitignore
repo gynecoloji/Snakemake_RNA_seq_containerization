@@ -50,3 +50,5 @@ Thumbs.db
 # ── Keep the .test/ placeholder inputs tracked despite the patterns above ──
 !.test/
 !.test/**
+# ...but never track Snakemake's runtime cache/logs written under it.
+.test/.snakemake/
