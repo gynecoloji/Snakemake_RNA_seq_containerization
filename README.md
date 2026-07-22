@@ -1,5 +1,8 @@
 # Advanced RNA-seq Analysis Pipeline
 
+[![CI](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/actions/workflows/ci.yml/badge.svg)](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/actions/workflows/ci.yml)
+<!-- After minting a Zenodo DOI, uncomment and fill in the badge below:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) -->
 ![Docker Pulls](https://img.shields.io/docker/pulls/gynecoloji/rnaseq_pipeline)
 ![Docker Image Size](https://img.shields.io/docker/image-size/gynecoloji/rnaseq_pipeline)
 ![GitHub Stars](https://img.shields.io/github/stars/gynecoloji/Snakemake_RNA_seq_containerization?style=social)
@@ -14,23 +17,23 @@ Integrates alignment-based quantification (HISAT2), alignment-free quantificatio
 ## 🚀 Quick Start
 ```bash
 # Clone the repository
-git clone https://github.com/gynecoloji/SnakeMake_RNAseq.git
-cd SnakeMake_RNAseq
+git clone https://github.com/gynecoloji/Snakemake_RNA_seq_containerization.git
+cd Snakemake_RNA_seq_containerization
 
 # Prepare your data
 mkdir -p data ref
 cp /path/to/fastq/*_R1_001.fastq.gz data/
 cp /path/to/fastq/*_R2_001.fastq.gz data/
 cp /path/to/references/* ref/
+# List your samples (sample_id column) in config/samples.csv
 
-# Run with Docker (easiest)
-docker-compose build
-docker-compose up
+# Run with Docker (easiest) — builds core stage → advanced QC → Salmon in one DAG
+docker compose build
+docker compose run --rm rnaseq --cores 20
 
-# Or run with Singularity / Apptainer (HPC)
-# Apptainer is a drop-in replacement — substitute `apptainer` for `singularity` below
-singularity pull rnaseq_pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
-singularity exec -B $(pwd)/data:/pipeline/data rnaseq_pipeline.sif snakemake --cores 20
+# Or run with Singularity / Apptainer (HPC). Apptainer auto-mounts the CWD.
+apptainer pull rnaseq-pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
+apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 20
 ```
 
 **Results:** Check `results/multiqc_report.html` for comprehensive QC summary.
@@ -90,14 +93,14 @@ Raw FASTQ files
 ## 📖 Documentation
 
 **Getting Started:**
-- 🐳 [**Docker Quick Reference**](DOCKER_QUICKREF.md) - Common commands & examples
+- 🐳 [**Docker Guide**](DOCKER.md) - Build & run in a container
 - 🖥️ [**HPC/Singularity Guide**](SINGULARITY_HPC.md) - Complete cluster deployment guide
 - 🛠️ [**Setup Guide**](SETUP_GUIDE.md) - Detailed installation & customization
 
 **Understanding the Pipeline:**
 - 📋 [**Input Requirements**](#input-requirements) - Data preparation checklist
 - 📊 [**Output Structure**](#output-description) - What gets generated
-- ⚙️ [**Configuration**](#configuration) - All tunable parameters in `config.yaml`
+- ⚙️ [**Configuration**](#configuration) - All tunable parameters in `config/config.yaml`
 
 **Need Help?**
 - 🐛 [**Troubleshooting**](#troubleshooting) - Common issues & solutions
@@ -115,11 +118,11 @@ Raw FASTQ files
 git clone https://github.com/gynecoloji/Snakemake_RNA_seq_containerization.git
 cd Snakemake_RNA_seq_containerization
 
-# Build image (one-time setup)
-docker-compose build
+# Build image (one-time setup; pre-bakes the conda envs)
+docker compose build
 
-# Verify installation
-docker-compose run rnaseq-pipeline --help
+# Verify installation with a dry run
+docker compose run --rm rnaseq -n
 ```
 
 **Advantages:**
@@ -127,7 +130,7 @@ docker-compose run rnaseq-pipeline --help
 - ✅ Identical environment across systems
 - ✅ Easy resource management
 
-📖 **Full guide:** [DOCKER_QUICKREF.md](DOCKER_QUICKREF.md)
+📖 **Full guide:** [DOCKER.md](DOCKER.md)
 
 ---
 
@@ -167,14 +170,10 @@ singularity build rnaseq_pipeline.sif docker-archive://rnaseq_pipeline.tar.gz
 git clone https://github.com/gynecoloji/Snakemake_RNA_seq_containerization.git
 cd Snakemake_RNA_seq_containerization
 
-# Create all environments
-conda env create -f envs/snakemake.yaml
-conda env create -f envs/qualimap.yaml
-conda env create -f envs/RSeQC.yaml
-conda env create -f envs/salmon.yaml
-
-# Activate main environment
-conda activate snakemake
+# Driver env (Snakemake + pandas). The per-rule tool envs under workflow/envs/
+# are created automatically on the first `--use-conda` run.
+mamba create -n rnaseq -c conda-forge -c bioconda snakemake pandas
+conda activate rnaseq
 ```
 
 **Use this if:** You need to modify tool versions or can't use containers
@@ -197,61 +196,52 @@ conda activate snakemake
 
 ### Docker Usage
 
-**Run all three pipelines (recommended):**
-```bash
-# Using docker-compose (simplest)
-docker-compose up
+The image entrypoint is `snakemake --use-conda --conda-frontend mamba --conda-prefix /opt/wf-conda`, so anything after the image / service name is passed straight to Snakemake. The whole project is mounted at `/workflow`.
 
-# Or with docker run
-docker run --rm \
-  -v $(pwd)/data:/pipeline/data \
-  -v $(pwd)/ref:/pipeline/ref \
-  -v $(pwd)/results:/pipeline/results \
-  -v $(pwd)/logs:/pipeline/logs \
-  rnaseq-pipeline:latest
+**Run everything (core stage → advanced QC → Salmon) in one DAG:**
+```bash
+# Using docker compose (simplest)
+docker compose run --rm rnaseq --cores 20
+
+# Or with docker run (mount the project; run as your host user)
+docker run --rm -v "$(pwd)":/workflow -e HOME=/tmp --user "$(id -u):$(id -g)" \
+  rnaseq-pipeline:latest -s workflow/Snakefile --cores 20
 ```
 
-**Run individual pipelines:**
+**Run a single stage (append the target):**
 ```bash
-# Core RNA-seq only
-docker-compose run rnaseq_pipeline --pipeline rna --cores 10
-
-# QC analysis only
-docker-compose run rnaseq_pipeline --pipeline qc
-
-# Salmon quantification only
-docker-compose run rnaseq_pipeline --pipeline salmon
-
-# Dry run (check workflow without executing)
-docker-compose run rnaseq_pipeline --dry-run
+docker compose run --rm rnaseq --cores 10 rna_all      # core RNA-seq only
+docker compose run --rm rnaseq --cores 10 qc_all       # advanced QC only
+docker compose run --rm rnaseq --cores 10 salmon_all   # Salmon only
 ```
 
-**Interactive debugging:**
+**Dry run (check the DAG without executing):**
 ```bash
-docker-compose run rnaseq_pipeline --shell
-# Inside container:
-conda activate snakemake
-snakemake -n -s snakefile_RNA
+docker compose run --rm rnaseq -n
 ```
+
+See [DOCKER.md](DOCKER.md) for the full container guide (including building the Apptainer `.sif`).
 
 ---
 
 ### Singularity / Apptainer Usage (HPC)
 
-> Commands below use `singularity`. If your cluster has Apptainer, either substitute `apptainer`, rely on the `singularity` compatibility symlink Apptainer ships, or add `alias singularity=apptainer` to your shell profile. Semantics of `exec`, `pull`, `build`, `-B`, etc. are identical.
+> Commands below use `apptainer`; every one also works as `singularity` (identical CLI). Apptainer auto-mounts your home, `/tmp`, and the current directory and runs as you, so no `-B` bind or `--user` is needed when you run from the project directory.
 
-**Interactive execution:**
+**Get the image** — pull the published Docker image and convert once, or build natively from [`apptainer.def`](apptainer.def):
 ```bash
-singularity exec \
-  -B $(pwd)/data:/pipeline/data \
-  -B $(pwd)/ref:/pipeline/ref \
-  -B $(pwd)/results:/pipeline/results \
-  -B $(pwd)/logs:/pipeline/logs \
-  rnaseq_pipeline.sif \
-  snakemake --use-conda --cores 20 -s /pipeline/snakefile_RNA -p
+apptainer pull rnaseq-pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
+# or, on a cluster without Docker:  apptainer build --fakeroot rnaseq-pipeline.sif apptainer.def
 ```
 
-**Submit to SLURM scheduler:**
+**Run (from your project directory — everything in one DAG):**
+```bash
+apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 20
+# or a single stage:
+apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 20 rna_all
+```
+
+**Submit to SLURM:**
 ```bash
 #!/bin/bash
 #SBATCH --job-name=rnaseq
@@ -259,15 +249,10 @@ singularity exec \
 #SBATCH --mem=64G
 #SBATCH --time=24:00:00
 
-module load singularity
+module load apptainer   # or: module load singularity
 
-singularity exec \
-  -B ${PWD}/data:/pipeline/data \
-  -B ${PWD}/ref:/pipeline/ref \
-  -B ${PWD}/results:/pipeline/results \
-  rnaseq_pipeline.sif \
-  snakemake --use-conda --cores ${SLURM_CPUS_PER_TASK} \
-    -s /pipeline/snakefile_RNA -p
+apptainer run rnaseq-pipeline.sif \
+  -s workflow/Snakefile --cores ${SLURM_CPUS_PER_TASK} -p
 ```
 
 📖 **Complete HPC guide with job scripts:** [SINGULARITY_HPC.md](SINGULARITY_HPC.md)
@@ -276,34 +261,69 @@ singularity exec \
 
 ### Local Conda Usage
 ```bash
-# Activate environment
-conda activate snakemake
+# Driver env (per-rule tool envs are built automatically on the first --use-conda run)
+mamba create -n rnaseq -c conda-forge -c bioconda snakemake pandas
+conda activate rnaseq
 
-# Run core pipeline
-snakemake --use-conda --cores 20 -s snakefile_RNA -p
+# Run everything (core stage → advanced QC → Salmon) in one dependency-ordered DAG
+snakemake --use-conda -s workflow/Snakefile --cores 20 -p
 
-# Run QC pipeline
-snakemake --use-conda --cores 20 -s snakefile_RNAQC -p
-
-# Run Salmon pipeline
-snakemake --use-conda --cores 20 -s snakefile_salmon -p
+# Or run a single stage
+snakemake --use-conda -s workflow/Snakefile --cores 20 rna_all -p      # core RNA-seq
+snakemake --use-conda -s workflow/Snakefile --cores 20 qc_all -p       # advanced QC
+snakemake --use-conda -s workflow/Snakefile --cores 20 salmon_all -p   # Salmon
 
 # Dry run first (recommended)
-snakemake -n -s snakefile_RNA
+snakemake -n -s workflow/Snakefile
 ```
 
 ---
 
 ### Common Options
 
-| Flag | Description | Example |
+Everything runs through Snakemake targets on `workflow/Snakefile`:
+
+| Argument | Description | Example |
 |------|-------------|---------|
-| `--pipeline rna\|qc\|salmon\|all` | Which pipeline to run | `--pipeline rna` |
+| *(no target)* | Build everything (core → QC → Salmon) | `snakemake -s workflow/Snakefile --cores 20` |
+| `rna_all` | Core RNA-seq stage only | `... --cores 20 rna_all` |
+| `qc_all` | Advanced-QC stage only | `... --cores 20 qc_all` |
+| `salmon_all` | Salmon quantification only | `... --cores 20 salmon_all` |
 | `--cores N` | Number of CPU cores | `--cores 10` |
-| `--dry-run` | Show what will run | `--dry-run` |
-| `--shell` | Interactive container shell | `--shell` |
-| `-n` | Snakemake dry run | `snakemake -n` |
-| `-p` | Print shell commands | `snakemake -p` |
+| `-n` | Dry run (show what will run) | `snakemake -n -s workflow/Snakefile` |
+| `-p` | Print shell commands | `-p` |
+
+---
+
+## 📦 Deploying with snakedeploy
+
+This repository follows the [Snakemake Workflow Catalog](https://snakemake.github.io/snakemake-workflow-catalog/)
+standardized layout (`workflow/Snakefile`, `config/`, `workflow/{rules,envs,schemas}/`,
+and `.snakemake-workflow-catalog.yml`), so it can be deployed into another project
+without cloning it by hand:
+
+```bash
+pip install snakedeploy
+# In an empty target project directory:
+snakedeploy deploy-workflow https://github.com/gynecoloji/Snakemake_RNA_seq_containerization . --tag main
+```
+
+This writes a `workflow/Snakefile` that `module`-imports this workflow, plus a
+`config/` copy for you to edit. You can also import selected rules into your own
+`Snakefile`:
+
+```python
+module rnaseq:
+    snakefile:
+        github("gynecoloji/Snakemake_RNA_seq_containerization", path="workflow/Snakefile", tag="main")
+    config:
+        config
+
+use rule * from rnaseq
+```
+
+Then supply your own `config/config.yaml`, `config/samples.csv`, and `ref/`
+reference data and run with `snakemake --use-conda`.
 
 ---
 
@@ -343,30 +363,30 @@ project/
 
 ### Reference Files (`ref/` folder)
 
-All reference data is expected under the `ref/` directory at the project root. The snakefiles reference these paths literally, so filenames and layout must match exactly (or be updated in the snakefiles — marked `# <<< UPDATE THIS`).
+All reference data is expected under the `ref/` directory at the project root. The reference paths are set in `config/config.yaml` (the `references:` section), so filenames and layout must match those values (or update the config).
 
 | Path | Used by | What it is | How to obtain |
 |------|---------|------------|---------------|
-| `ref/ENSEMBL/genome.{1..8}.ht2` | `snakefile_RNA` | HISAT2 index (8 files, prefix `genome`) | `hisat2-build genome.fa ref/ENSEMBL/genome` — or download a prebuilt index from the [HISAT2 site](https://daehwankimlab.github.io/hisat2/download/) and rename the prefix to `genome` |
-| `ref/Homo_sapiens.GRCh38.102.gtf` | `snakefile_RNA`, `snakefile_RNAQC` | ENSEMBL gene annotation (GTF, uncompressed) | `wget https://ftp.ensembl.org/pub/release-102/gtf/homo_sapiens/Homo_sapiens.GRCh38.102.gtf.gz && gunzip Homo_sapiens.GRCh38.102.gtf.gz` |
-| `ref/ENSEMBL_hg38.bed` | `snakefile_RNAQC` (RSeQC) | 12-column BED of gene models for RSeQC `read_distribution.py` / `tin.py` | Download from [RSeQC reference BEDs](https://sourceforge.net/projects/rseqc/files/BED/) or convert your GTF (`gtfToGenePred` → `genePredToBed`) |
-| `ref/picard.jar` | `snakefile_RNAQC` | Picard Tools executable JAR | `wget https://github.com/broadinstitute/picard/releases/latest/download/picard.jar -O ref/picard.jar` |
-| `ref/Salmon_index_Grch38/` | `snakefile_salmon` | Standard Salmon transcriptome index (directory) | `salmon index -t transcripts.fa -i ref/Salmon_index_Grch38 -k 31` |
-| `ref/Salmon_index_decoy_Grch38/` | `snakefile_salmon` | Decoy-aware Salmon index (transcriptome + genome decoys) | Follow the [Salmon decoy-aware guide](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode); output to `ref/Salmon_index_decoy_Grch38` |
+| `ref/ENSEMBL/genome.{1..8}.ht2` | `rna_all` | HISAT2 index (8 files, prefix `genome`) | `hisat2-build genome.fa ref/ENSEMBL/genome` — or download a prebuilt index from the [HISAT2 site](https://daehwankimlab.github.io/hisat2/download/) and rename the prefix to `genome` |
+| `ref/Homo_sapiens.GRCh38.102.gtf` | `rna_all`, `qc_all` | ENSEMBL gene annotation (GTF, uncompressed) | `wget https://ftp.ensembl.org/pub/release-102/gtf/homo_sapiens/Homo_sapiens.GRCh38.102.gtf.gz && gunzip Homo_sapiens.GRCh38.102.gtf.gz` |
+| `ref/ENSEMBL_hg38.bed` | `qc_all` (RSeQC) | 12-column BED of gene models for RSeQC `read_distribution.py` / `tin.py` | Download from [RSeQC reference BEDs](https://sourceforge.net/projects/rseqc/files/BED/) or convert your GTF (`gtfToGenePred` → `genePredToBed`) |
+| `ref/picard.jar` | `qc_all` | Picard Tools executable JAR | `wget https://github.com/broadinstitute/picard/releases/latest/download/picard.jar -O ref/picard.jar` |
+| `ref/Salmon_index_Grch38/` | `salmon_all` | Standard Salmon transcriptome index (directory) | `salmon index -t transcripts.fa -i ref/Salmon_index_Grch38 -k 31` |
+| `ref/Salmon_index_decoy_Grch38/` | `salmon_all` | Decoy-aware Salmon index (transcriptome + genome decoys) | Follow the [Salmon decoy-aware guide](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode); output to `ref/Salmon_index_decoy_Grch38` |
 
 **Notes:**
 - The GTF/BED above are for ENSEMBL release 102, GRCh38 (human). For other species or releases, substitute the equivalent files and update the paths in the relevant snakefile.
 - The GTF must match the genome build the HISAT2 index was constructed against, and the transcriptome used for Salmon indices.
-- Only the files required for the pipeline(s) you intend to run need to be present — e.g. if you only run `--pipeline salmon`, you can skip the HISAT2 index and `picard.jar`.
+- Only the files required for the stage(s) you intend to run need to be present — e.g. if you only run `salmon_all`, you can skip the HISAT2 index and `picard.jar`.
 
 ### Reference Files Checklist
 
-- [ ] **HISAT2 index** — `ref/ENSEMBL/genome.*.ht2` (for `snakefile_RNA`)
-- [ ] **GTF annotation** — `ref/Homo_sapiens.GRCh38.102.gtf` (for `snakefile_RNA`, `snakefile_RNAQC`)
-- [ ] **BED annotation** — `ref/ENSEMBL_hg38.bed` (for `snakefile_RNAQC` / RSeQC)
-- [ ] **Picard JAR** — `ref/picard.jar` (for `snakefile_RNAQC`)
-- [ ] **Salmon standard index** — `ref/Salmon_index_Grch38/` (for `snakefile_salmon`)
-- [ ] **Salmon decoy index** — `ref/Salmon_index_decoy_Grch38/` (for `snakefile_salmon`)
+- [ ] **HISAT2 index** — `ref/ENSEMBL/genome.*.ht2` (for `rna_all`)
+- [ ] **GTF annotation** — `ref/Homo_sapiens.GRCh38.102.gtf` (for `rna_all`, `qc_all`)
+- [ ] **BED annotation** — `ref/ENSEMBL_hg38.bed` (for `qc_all` / RSeQC)
+- [ ] **Picard JAR** — `ref/picard.jar` (for `qc_all`)
+- [ ] **Salmon standard index** — `ref/Salmon_index_Grch38/` (for `salmon_all`)
+- [ ] **Salmon decoy index** — `ref/Salmon_index_decoy_Grch38/` (for `salmon_all`)
 
 📖 **How to prepare references:** See [SETUP_GUIDE.md](SETUP_GUIDE.md#reference-preparation)
 
@@ -374,31 +394,18 @@ All reference data is expected under the `ref/` directory at the project root. T
 
 ## ⚙️ Configuration
 
-All tunable parameters live in a single file at the repo root: **`config.yaml`**. The three snakefiles read it via `configfile: "config.yaml"`, so you can change paths, threads, or tool flags without touching any pipeline code.
+All tunable parameters live in **`config/config.yaml`**; samples are listed in **`config/samples.csv`**. `workflow/Snakefile` reads them via `configfile: "config/config.yaml"` and validates against [`workflow/schemas/config.schema.yaml`](workflow/schemas/config.schema.yaml) — the single source of truth for parameter types, defaults, and descriptions — on every run.
 
 ### Override at runtime
 
 ```bash
 # Use a custom config file
-snakemake --configfile my_config.yaml --cores 20 -s snakefile_RNA
+snakemake --configfile my_config.yaml --cores 20 -s workflow/Snakefile
 
-# Override a single value
-snakemake --config references=hisat2_index=ref/mouse/genome --cores 20 -s snakefile_RNA
-
-# In Docker — mount your config over the baked-in default
-docker run --rm \
-  -v $(pwd)/data:/pipeline/data \
-  -v $(pwd)/ref:/pipeline/ref \
-  -v $(pwd)/config.yaml:/pipeline/config.yaml \
-  gynecoloji/rnaseq_pipeline:latest
-
-# In Singularity / Apptainer
-singularity exec \
-  -B $(pwd)/data:/pipeline/data \
-  -B $(pwd)/ref:/pipeline/ref \
-  -B $(pwd)/config.yaml:/pipeline/config.yaml \
-  rnaseq_pipeline.sif \
-  snakemake --use-conda --cores 20 -s /pipeline/snakefile_RNA
+# In Docker / Apptainer the whole project is mounted at /workflow, so just edit
+# config/config.yaml and config/samples.csv before running — no rebuild needed.
+docker run --rm -v "$(pwd)":/workflow -e HOME=/tmp --user "$(id -u):$(id -g)" \
+  rnaseq-pipeline:latest -s workflow/Snakefile --cores 20
 ```
 
 ### Configurable sections
@@ -450,7 +457,7 @@ qualimap:
   java_mem: "8G"
 ```
 
-📖 See [`config.yaml`](config.yaml) for the full annotated file.
+📖 See [`config/config.yaml`](config/config.yaml) for the full annotated file.
 
 ---
 
@@ -629,6 +636,10 @@ This pipeline integrates tools developed by the bioinformatics community. Specia
 ## 📊 Pipeline Statistics
 
 ![Workflow](diagram.png)
+
+The Snakemake rule graph (auto-generated from the `.test/` fixture):
+
+![Rule graph](images/rulegraph.svg)
 
 - **Tools Integrated:** 10+
 - **QC Metrics:** 20+

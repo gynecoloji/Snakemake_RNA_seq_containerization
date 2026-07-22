@@ -1,379 +1,113 @@
-# 🐳 Docker Setup Guide for SnakeMake RNA-seq Pipeline
+# Setup Guide
 
-## 📦 What Was Created
+A practical walkthrough for getting the RNA-seq workflow running. For the full
+parameter reference see [`config/README.md`](config/README.md); for container
+details see [`DOCKER.md`](DOCKER.md) and [`SINGULARITY_HPC.md`](SINGULARITY_HPC.md).
 
-This professional Docker setup includes 6 files that will containerize your entire RNA-seq pipeline:
+## 1. Repository layout
 
-### 1. **Dockerfile** 
-Main container definition that:
-- Uses Miniconda3 as base image
-- Installs all system dependencies (Java, build tools, etc.)
-- Creates all 4 conda environments (snakemake, qualimap, RSeQC, salmon)
-- Sets up the complete pipeline structure
-- Optimized with multi-stage caching for faster builds
+```
+snakemake_RNAseq/
+├── config/
+│   ├── config.yaml        # all parameters (validated against the schema)
+│   ├── samples.csv        # sample sheet (sample_id[, condition])
+│   └── README.md
+├── workflow/
+│   ├── Snakefile          # entry point (unified DAG; targets rna_all/qc_all/salmon_all)
+│   ├── rules/             # common.smk, rnaseq.smk, qc.smk, salmon.smk
+│   ├── envs/              # 4 per-rule conda envs
+│   └── schemas/config.schema.yaml
+├── data/                  # your FASTQ files (you provide)
+├── ref/                   # reference genomes/indexes/annotations (you provide)
+├── Dockerfile, docker-compose.yml, apptainer.def, run_pipeline.sh
+└── results/, logs/        # created at runtime
+```
 
-### 2. **docker-compose.yml**
-Orchestration file that:
-- Simplifies running the container with proper volume mounts
-- Manages resource limits (20 CPUs, 64GB RAM by default)
-- Provides environment variables for easy configuration
-- Includes optional Jupyter notebook service for downstream analysis
+## 2. Prepare inputs
 
-### 3. **entrypoint.sh**
-Smart entry script that:
-- Accepts command-line arguments (--pipeline, --cores, --dry-run)
-- Runs pipelines individually or all sequentially
-- Provides colored, user-friendly output
-- Validates data presence before running
-- Handles errors gracefully with informative messages
+1. **Reads** — place paired-end FASTQ files in `data/`, named
+   `{sample_id}_R1_001.fastq.gz` / `{sample_id}_R2_001.fastq.gz`.
+2. **Sample sheet** — list each `sample_id` in `config/samples.csv` (one row per
+   sample; an optional `condition` column is informational).
+3. **References** — put the files referenced in `config/config.yaml`'s
+   `references:` section under `ref/` (HISAT2 index, GTF, RSeQC BED, `picard.jar`,
+   and the two Salmon indexes). See the top-level [README](README.md#-input-requirements)
+   for exact files and how to obtain them. Only the references for the stage(s)
+   you run need to be present.
+4. **Config** — edit `config/config.yaml` (organism metadata, reference paths,
+   per-rule threads, tool flags). It ships with working GRCh38 defaults.
 
-### 4. **.dockerignore**
-Build optimization file that:
-- Excludes large data files from Docker image
-- Prevents git history from being copied
-- Removes build artifacts and cache files
-- Keeps image size minimal (~2-3GB instead of 10GB+)
+## 3. Choose how to run
 
-### 5. **README_Docker.md**
-Comprehensive documentation with:
-- Step-by-step installation instructions
-- Docker and local usage comparisons
-- Advanced usage examples
-- Troubleshooting guide
-- Best practices and pro tips
-
-### 6. **DOCKER_QUICKREF.md**
-Quick reference card with:
-- Common commands cheat sheet
-- Example workflows
-- Resource management tips
-- Directory structure guide
-
----
-
-## 🚀 How to Deploy
-
-### Step 1: Add Files to Your Repository
-
-Copy all files from this setup to your GitHub repository root:
+### Option A — Docker (local / cloud)
 
 ```bash
-# Copy files to your repo (adjust path as needed)
-cp Dockerfile docker-compose.yml entrypoint.sh .dockerignore /path/to/SnakeMake_RNAseq/
-cp README_Docker.md /path/to/SnakeMake_RNAseq/
-cp DOCKER_QUICKREF.md /path/to/SnakeMake_RNAseq/
-
-# Make entrypoint executable
-chmod +x /path/to/SnakeMake_RNAseq/entrypoint.sh
+docker compose build                       # one-time (pre-bakes the conda envs)
+docker compose run --rm rnaseq -n          # dry run: check the DAG
+docker compose run --rm rnaseq --cores 20  # everything (core → QC → Salmon)
 ```
 
-### Step 2: Update Your Repository
+Run a single stage by appending its target, e.g.
+`docker compose run --rm rnaseq --cores 10 rna_all`. See [DOCKER.md](DOCKER.md).
+
+### Option B — Apptainer / Singularity (HPC)
 
 ```bash
-cd /path/to/SnakeMake_RNAseq
-git add Dockerfile docker-compose.yml entrypoint.sh .dockerignore README_Docker.md DOCKER_QUICKREF.md
-git commit -m "Add Docker support for easy deployment"
-git push origin main
+apptainer pull rnaseq-pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
+# or build natively:  apptainer build --fakeroot rnaseq-pipeline.sif apptainer.def
+apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 20
 ```
 
-### Step 3: Optional - Replace Original README
+See [SINGULARITY_HPC.md](SINGULARITY_HPC.md) for SLURM job scripts.
+
+### Option C — Local conda
 
 ```bash
-# Backup original
-mv README.md README_original.md
-
-# Use Docker version
-mv README_Docker.md README.md
-
-git add README.md README_original.md
-git commit -m "Update README with Docker instructions"
-git push origin main
+mamba create -n rnaseq -c conda-forge -c bioconda snakemake pandas
+conda activate rnaseq
+snakemake --use-conda -s workflow/Snakefile --cores 20        # everything
+snakemake --use-conda -s workflow/Snakefile --cores 20 qc_all # one stage
 ```
 
----
+The four per-rule tool environments under `workflow/envs/` are created
+automatically on the first `--use-conda` run.
 
-## 🎯 Usage Examples
+## 4. Targets
 
-### For End Users (Easiest)
+| Target | Builds |
+|---|---|
+| *(default)* | core RNA-seq → advanced QC → Salmon, in one dependency-ordered DAG |
+| `rna_all` | FastQC → fastp → HISAT2 → samtools → featureCounts → MultiQC |
+| `qc_all` | Picard, Qualimap (bamqc + rnaseq), RSeQC (read distribution, GC, TIN) |
+| `salmon_all` | Salmon standard + decoy-aware quantification |
+
+`qc_all` and `salmon_all` automatically build their core-stage prerequisites.
+
+## 5. Results
+
+Outputs land in `results/` (per-rule logs in `logs/`). Start with
+`results/multiqc_report.html`; the gene count matrix is
+`results/featurecounts/featureCount.txt` and Salmon abundances are under
+`results/quants/` and `results/quants_decoy/`. See the
+[README output section](README.md#-output-description) for the full layout.
+
+## 6. Customization
+
+- **Parameters** — edit `config/config.yaml`; it is validated against
+  `workflow/schemas/config.schema.yaml` on every run (fail-fast on bad values,
+  defaults filled for anything omitted).
+- **Different organism** — point the `references:` paths and `genome:` metadata at
+  your files; set `featurecounts.strandedness` and `qualimap.protocol` for your
+  library.
+- **Low-RAM machine** — lower the `threads:` values and `qualimap.java_mem`.
+- **Custom config at runtime** — `snakemake --configfile my.yaml -s workflow/Snakefile`.
+
+## 7. Publishing the image (maintainers)
 
 ```bash
-# Clone your repo
-git clone https://github.com/gynecoloji/SnakeMake_RNAseq.git
-cd SnakeMake_RNAseq
-
-# Prepare data
-mkdir -p data ref
-cp /your/fastq/files/*_R1_001.fastq.gz data/
-cp /your/fastq/files/*_R2_001.fastq.gz data/
-cp /your/references/* ref/
-
-# Build and run
-docker-compose build
-docker-compose up
+docker build -t gynecoloji/rnaseq_pipeline:latest .
+docker push gynecoloji/rnaseq_pipeline:latest
 ```
 
-### For Developers
-
-```bash
-# Test dry run
-docker-compose run rnaseq-pipeline --dry-run
-
-# Run specific pipeline
-docker-compose run rnaseq-pipeline --pipeline rna --cores 10
-
-# Debug in shell
-docker-compose run rnaseq-pipeline --shell
-```
-
-### For HPC/Cluster Users
-
-```bash
-# Build once
-docker build -t rnaseq-pipeline:latest .
-
-# Save as tar (for offline transfer)
-docker save rnaseq-pipeline:latest | gzip > rnaseq-pipeline.tar.gz
-
-# On cluster: Load image
-docker load < rnaseq-pipeline.tar.gz
-
-# Run with Slurm/PBS
-docker run --rm \
-  -v $PWD/data:/pipeline/data \
-  -v $PWD/ref:/pipeline/ref \
-  -v $PWD/results:/pipeline/results \
-  --cpus=20 --memory=64g \
-  rnaseq-pipeline:latest --cores 20
-```
-
----
-
-## 🎨 Customization Options
-
-### Adjust Resource Limits
-
-Edit `docker-compose.yml`:
-
-```yaml
-deploy:
-  resources:
-    limits:
-      cpus: '10'      # Change from 20 to 10
-      memory: 32G     # Change from 64G to 32G
-```
-
-### Change Default Cores
-
-Edit `docker-compose.yml`:
-
-```yaml
-environment:
-  - THREADS=10           # Change from 20 to 10
-  - SNAKEMAKE_CORES=10   # Change from 20 to 10
-```
-
-### Add Custom Reference Paths
-
-Edit `Dockerfile` or mount additional volumes:
-
-```yaml
-volumes:
-  - ./my_custom_refs:/pipeline/custom_refs
-```
-
-### Modify Pipeline Behavior
-
-Edit the Snakefiles directly - they're mounted as volumes, so changes take effect immediately without rebuilding:
-
-```yaml
-volumes:
-  - ./snakefile_RNA:/pipeline/snakefile_RNA
-```
-
-### Tune Pipeline Parameters via `config.yaml`
-
-Most parameters (reference paths, per-rule threads, fastp/HISAT2/featureCounts/Salmon flags, Qualimap memory, library protocol) live in **`config.yaml`** at the repo root. Edit it once instead of touching the snakefiles:
-
-```yaml
-# config.yaml — examples
-references:
-  hisat2_index: "ref/mouse/genome"
-  gtf:          "ref/Mus_musculus.GRCm39.110.gtf"
-
-featurecounts:
-  strandedness: 1            # 0 = unstranded, 1 = forward, 2 = reverse
-
-threads:
-  hisat2: 8                  # ↓ for low-RAM machines
-```
-
-**Override at runtime without editing the file:**
-
-```bash
-# Use a different config
-snakemake --configfile my_config.yaml --cores 20 -s snakefile_RNA
-
-# Override single key
-snakemake --config references=hisat2_index=ref/mouse/genome --cores 20 -s snakefile_RNA
-
-# Inside Docker — bind-mount your config over the baked-in default
-docker run --rm \
-  -v $(pwd)/data:/pipeline/data \
-  -v $(pwd)/ref:/pipeline/ref \
-  -v $(pwd)/config.yaml:/pipeline/config.yaml \
-  rnaseq-pipeline:latest
-```
-
-See the full annotated reference in [`config.yaml`](config.yaml).
-
----
-
-## 📊 Best Practices
-
-### 1. **Data Organization**
-```
-project/
-├── SnakeMake_RNAseq/    # Your cloned repo
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   └── ...
-├── data/                 # Symlink or mount
-├── ref/                  # Symlink or mount
-└── results/             # Pipeline outputs
-```
-
-### 2. **Version Control**
-- Tag Docker images with versions: `docker build -t rnaseq-pipeline:v1.0 .`
-- Use semantic versioning for releases
-- Keep changelog in README
-
-### 3. **Performance**
-- Use SSD for data/results directories
-- Allocate sufficient RAM (minimum 32GB, recommended 64GB)
-- Monitor with `docker stats` during runs
-
-### 4. **Reproducibility**
-- Pin all conda package versions in YAML files ✓ (already done)
-- Document reference genome versions in README
-- Include MD5 checksums for reference files
-
-### 5. **Security**
-- Don't include sensitive data in Docker image
-- Use volumes for all data/results
-- Run with user permissions (add to Dockerfile if needed)
-
----
-
-## 🔍 Verification Checklist
-
-Before pushing to GitHub:
-
-- [ ] All 6 files are in repository root
-- [ ] `entrypoint.sh` is executable (chmod +x)
-- [ ] `.dockerignore` excludes large files
-- [ ] `docker-compose.yml` has correct volume paths
-- [ ] Documentation is clear and complete
-- [ ] Example data paths are updated in README
-- [ ] License file exists (MIT ✓)
-
-Build test:
-- [ ] `docker-compose build` completes successfully
-- [ ] Image size is reasonable (<5GB)
-- [ ] `docker run ... --help` shows correct help text
-- [ ] Dry run works: `docker-compose run rnaseq-pipeline --dry-run`
-
----
-
-## 📈 Next Steps
-
-### 1. Add CI/CD (GitHub Actions)
-
-Create `.github/workflows/docker.yml`:
-
-```yaml
-name: Build Docker Image
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build Docker image
-      run: docker build -t rnaseq-pipeline:latest .
-    - name: Test help command
-      run: docker run --rm rnaseq-pipeline:latest --help
-```
-
-### 2. Publish to Docker Hub
-
-```bash
-# Login
-docker login
-
-# Tag
-docker tag rnaseq-pipeline:latest yourusername/rnaseq-pipeline:latest
-docker tag rnaseq-pipeline:latest yourusername/rnaseq-pipeline:v1.0
-
-# Push
-docker push yourusername/rnaseq-pipeline:latest
-docker push yourusername/rnaseq-pipeline:v1.0
-```
-
-Then users can simply:
-```bash
-docker pull yourusername/rnaseq-pipeline:latest
-```
-
-### 3. Add Example Dataset
-
-Create a small test dataset for users to try:
-
-```bash
-mkdir -p test_data/
-# Add small FASTQ files (e.g., 10K reads)
-# Add mini reference files
-```
-
-### 4. Create Video Tutorial
-
-Record a quick demo showing:
-- How to clone and setup
-- Running the pipeline
-- Viewing results
-
----
-
-## 🆘 Support
-
-If users encounter issues:
-
-1. Check DOCKER_QUICKREF.md for common solutions
-2. Open GitHub issue with:
-   - Docker version: `docker --version`
-   - Error messages
-   - System specs (RAM, CPU)
-
----
-
-## ✅ Summary
-
-Your pipeline is now professionally containerized with:
-- ✅ Easy one-command deployment
-- ✅ Reproducible environment
-- ✅ Clear documentation
-- ✅ Flexible configuration
-- ✅ Production-ready setup
-
-Users can now run your complex RNA-seq pipeline without installing any bioinformatics tools manually!
-
----
-
-**Created**: Dec 29, 2025  
-**Author**: gynecoloji  
-**Docker Support**: Ready for production
+CI (`.github/workflows/ci.yml`) validates the config and builds the DAG on every
+push; releases are automated via release-please (see [CONTRIBUTING.md](CONTRIBUTING.md)).
