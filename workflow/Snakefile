@@ -20,9 +20,11 @@ configfile: "config/config.yaml"
 
 include: "rules/common.smk"
 include: "rules/rnaseq.smk"
+include: "rules/qc.smk"
 
 
 rule all:
     input:
         rules.rna_all.input,
+        rules.qc_all.input,
     default_target: True
