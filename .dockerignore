@@ -1,91 +1,30 @@
-# Git files
 .git/
-.gitignore
-.gitattributes
+.github/
+.snakemake/
+.test/
+.pytest_cache/
+__pycache__/
+*.pyc
 
-# Documentation (already copied)
+# Large data / outputs (mounted or generated at runtime)
+data/*
+!data/.gitkeep
+results/
+logs/
+ref/*
+!ref/**/.gitkeep
+
+# Docs & images not needed in the image
+docs/
+images/
 *.md
 !README.md
 
-# Docker files (avoid recursion)
-Dockerfile
-docker-compose.yml
-.dockerignore
-
-# Large data files (should be mounted as volumes)
-data/*.fastq.gz
-data/*.fq.gz
-results/
-logs/
-
-# Reference files (should be mounted as volumes)
-ref/*.gtf
-ref/*.fa
-ref/*.fasta
-ref/*.ht2
-ref/*.bed
-ref/ENSEMBL/
-ref/Salmon_index_*/
-*.2bit
-
-# Build artifacts
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-*.egg-info/
-dist/
+# Container build artefacts
+*.sif
 build/
 
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS files
+# OS / editor
 .DS_Store
-.DS_Store?
 ._*
-Thumbs.db
-
-# Temporary files
-*.tmp
-*.bak
-*.backup
-*.orig
-*.log
-
-# Node modules (if any)
-node_modules/
-npm-debug.log*
-
-# Environment files
-.env
-.env.local
-
-# Coverage and test files
-coverage/
-.pytest_cache/
-*.coverage
-
-# Conda environments (will be built inside container)
-env/
-venv/
-ENV/
-
-# Archive files
-*.zip
-*.tar
-*.gz
-*.7z
-*.rar
-
-# Jupyter notebook checkpoints
-.ipynb_checkpoints/
-
-# MultiQC data (generated during run)
-multiqc_data/
+*.swp
