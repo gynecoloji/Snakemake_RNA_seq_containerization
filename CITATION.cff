@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this workflow, please cite it using these metadata."
+title: "snakemake_RNAseq: a containerized RNA-seq Snakemake workflow"
+abstract: >-
+  A Snakemake workflow for RNA-seq analysis: FastQC/fastp read QC and trimming,
+  HISAT2 spliced alignment with samtools filtering, featureCounts gene
+  quantification, a comprehensive advanced-QC stage (Picard, Qualimap, RSeQC),
+  and Salmon transcript quantification (standard + decoy-aware). Containerized
+  with Docker and Apptainer.
+type: software
+authors:
+  - given-names: "Ji"
+    family-names: "Wang"
+    orcid: "https://orcid.org/0000-0003-3443-5857"
+repository-code: "https://github.com/gynecoloji/Snakemake_RNA_seq_containerization"
+url: "https://github.com/gynecoloji/Snakemake_RNA_seq_containerization"
+license: MIT
+keywords:
+  - RNA-seq
+  - Snakemake
+  - transcript quantification
+  - gene expression
+  - HISAT2
+  - Salmon
+  - bioinformatics workflow
+# `version` + `date-released` are bumped automatically by release-please.
+version: "1.0.0" # x-release-please-version
+date-released: "2026-07-22" # x-release-please-date

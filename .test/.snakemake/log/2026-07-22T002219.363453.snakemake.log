@@ -1,0 +1,4 @@
+No validator found for JSON Schema version identifier 'http://json-schema.org/draft-07/schema#'
+Defaulting to validator for JSON Schema version 'https://json-schema.org/draft/2020-12/schema'
+Note that schema file may not be validated correctly.
+Building DAG of jobs...
