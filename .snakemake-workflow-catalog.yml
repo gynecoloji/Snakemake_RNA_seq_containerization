@@ -1,0 +1,18 @@
+# Snakemake Workflow Catalog metadata.
+# https://snakemake.github.io/snakemake-workflow-catalog/
+
+usage:
+  mandatory-flags:
+    desc: >
+      Always run with --use-conda so each rule gets its pinned per-rule
+      environment. A single `snakemake --use-conda` builds the core RNA-seq
+      stage, advanced QC, and Salmon quantification end-to-end; run subsets with
+      the rna_all / qc_all / salmon_all targets. Before running, provide the
+      reference data under ref/ as described in the README (HISAT2 index, GTF,
+      RSeQC BED, picard.jar, and the two Salmon indexes).
+    flags: "--use-conda"
+  software-stack-deployment:
+    conda: true
+    apptainer: true
+    apptainer+conda: true
+  report: false

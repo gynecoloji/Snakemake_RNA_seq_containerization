@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install snakemake pytest pyyaml jsonschema pandas
+      - name: Unit tests
+        run: python -m pytest tests/ -q
+      - name: Stub inputs
+        # Empty placeholder reads so the DAG resolves in a dry run (no rule runs,
+        # so 0-byte files are fine). Reference files are rule params, not inputs.
+        run: |
+          mkdir -p data
+          python - <<'PY'
+          import csv, pathlib
+          for r in csv.DictReader(open("config/samples.csv")):
+              s = r["sample_id"]
+              for suf in ("_R1_001.fastq.gz", "_R2_001.fastq.gz"):
+                  pathlib.Path(f"data/{s}{suf}").touch()
+          PY
+      - name: Dry run (DAG builds + config validates)
+        run: snakemake -s workflow/Snakefile -n --cores 1
+      - name: Lint (informational)
+        continue-on-error: true
+        run: snakemake -s workflow/Snakefile --lint
