@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.2.0...v1.2.1) (2026-07-23)
+
+
+### Documentation
+
+* add Zenodo DOI badge and CITATION.cff identifier ([a37b981](https://github.com/gynecoloji/snakemake_RNAseq/commit/a37b9811ebf65e3caea14b1f800e2227b1df2302))
+* note the align_chroms/keep_chroms chromosome filters in Configuration ([1860cc7](https://github.com/gynecoloji/snakemake_RNAseq/commit/1860cc7edba009fbdca813e05e2c4df8863170dd))
+
 ## [1.2.0](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.1.1...v1.2.0) (2026-07-23)
 
 
