@@ -1,12 +1,12 @@
 # Advanced RNA-seq Analysis Pipeline
 
 [![CI](https://github.com/gynecoloji/snakemake_RNAseq/actions/workflows/ci.yml/badge.svg)](https://github.com/gynecoloji/snakemake_RNAseq/actions/workflows/ci.yml)
-<!-- After minting a Zenodo DOI, uncomment and fill in the badge below:
+[![Release](https://img.shields.io/github/v/release/gynecoloji/snakemake_RNAseq?label=release)](https://github.com/gynecoloji/snakemake_RNAseq/releases)
+[![Snakemake](https://img.shields.io/badge/snakemake-%E2%89%A58.0-brightgreen)](https://snakemake.github.io)
+[![Docker Hub](https://img.shields.io/docker/pulls/gynecoloji/rnaseq_pipeline?logo=docker&label=docker%20pulls)](https://hub.docker.com/r/gynecoloji/rnaseq_pipeline)
+[![License: MIT](https://img.shields.io/github/license/gynecoloji/snakemake_RNAseq)](LICENSE)
+<!-- After minting a Zenodo DOI, uncomment:
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) -->
-![Docker Pulls](https://img.shields.io/docker/pulls/gynecoloji/rnaseq_pipeline)
-![Docker Image Size](https://img.shields.io/docker/image-size/gynecoloji/rnaseq_pipeline)
-![GitHub Stars](https://img.shields.io/github/stars/gynecoloji/snakemake_RNAseq?style=social)
-![License](https://img.shields.io/github/license/gynecoloji/snakemake_RNAseq)
 
 **A production-ready, containerized Snakemake workflow for comprehensive RNA-seq analysis**
 
