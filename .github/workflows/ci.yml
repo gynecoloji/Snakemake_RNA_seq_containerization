@@ -19,10 +19,12 @@ jobs:
       - name: Unit tests
         run: python -m pytest tests/ -q
       - name: Stub inputs
-        # Empty placeholder reads so the DAG resolves in a dry run (no rule runs,
-        # so 0-byte files are fine). Reference files are rule params, not inputs.
+        # Empty placeholder reads + source FASTAs so the DAG resolves in a dry run
+        # (no rule runs, so 0-byte files are fine). The repo ships empty index dirs,
+        # so the index-build rules are scheduled and need genome_fasta/transcriptome_fasta.
         run: |
-          mkdir -p data
+          mkdir -p data ref
+          touch ref/genome.fa ref/transcripts.fa
           python - <<'PY'
           import csv, pathlib
           for r in csv.DictReader(open("config/samples.csv")):

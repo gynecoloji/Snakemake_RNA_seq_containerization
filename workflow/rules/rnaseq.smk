@@ -58,11 +58,54 @@ rule fastp_trim:
         """
 
 
+# Rule: Build the HISAT2 index from a genome FASTA. Only runs when the index files
+# are absent; if you provide a pre-built index, Snakemake skips this rule (and never
+# reads genome_fasta). Plain genome index by default; set index.hisat2_splice_aware
+# to build with --ss/--exon from the GTF (needs ~160 GB RAM for human).
+rule hisat2_build:
+    input:
+        genome=GENOME_FASTA,
+        gtf=GTF if HISAT2_SPLICE_AWARE else [],
+    output:
+        multiext(
+            HISAT2_INDEX,
+            ".1.ht2", ".2.ht2", ".3.ht2", ".4.ht2",
+            ".5.ht2", ".6.ht2", ".7.ht2", ".8.ht2",
+        ),
+    log:
+        f"{LOGS}/hisat2_build/build.log",
+    params:
+        prefix=HISAT2_INDEX,
+        splice_aware=HISAT2_SPLICE_AWARE,
+    threads: config["threads"]["hisat2"]
+    conda:
+        "../envs/snakemake.yaml"
+    shell:
+        """
+        mkdir -p $(dirname {params.prefix}) {LOGS}/hisat2_build
+        if [ "{params.splice_aware}" = "True" ]; then
+            SS={params.prefix}.ss.tsv
+            EXON={params.prefix}.exon.tsv
+            hisat2_extract_splice_sites.py {input.gtf} > "$SS" 2> {log}
+            hisat2_extract_exons.py {input.gtf} > "$EXON" 2>> {log}
+            hisat2-build -p {threads} --ss "$SS" --exon "$EXON" {input.genome} {params.prefix} >> {log} 2>&1
+            rm -f "$SS" "$EXON"
+        else
+            hisat2-build -p {threads} {input.genome} {params.prefix} >> {log} 2>&1
+        fi
+        """
+
+
 # Rule: Align reads with HISAT2
 rule hisat2_align:
     input:
         r1=f"{RESULTS}/trimmed/{{sample}}_R1.trimmed.fastq.gz",
         r2=f"{RESULTS}/trimmed/{{sample}}_R2.trimmed.fastq.gz",
+        index=multiext(
+            HISAT2_INDEX,
+            ".1.ht2", ".2.ht2", ".3.ht2", ".4.ht2",
+            ".5.ht2", ".6.ht2", ".7.ht2", ".8.ht2",
+        ),
     output:
         sam=f"{RESULTS}/hisat2/{{sample}}.sam",
         summary=f"{RESULTS}/hisat2/{{sample}}.sam.summary",

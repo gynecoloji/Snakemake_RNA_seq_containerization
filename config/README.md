@@ -33,3 +33,11 @@ comment on each parameter.
 Genomes, indexes and large annotations are not tracked in git. Place them under
 `ref/` matching the `references:` paths in `config.yaml`. See the top-level
 `README.md` (Reference Files) for exact files and how to obtain them.
+
+The HISAT2 and Salmon indexes are **built automatically** when absent: provide a
+genome FASTA (`references.genome_fasta`) and a transcriptome FASTA
+(`references.transcriptome_fasta`), and the `hisat2_build` / `salmon_index` /
+`salmon_decoy_index` rules create them on the first run. Drop in a pre-built index
+instead and the build is skipped (the source FASTAs are then never read).
+Index-build options live under the `index:` section (`hisat2_splice_aware`,
+`salmon_kmer`).

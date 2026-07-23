@@ -365,14 +365,23 @@ project/
 
 All reference data is expected under the `ref/` directory at the project root. The reference paths are set in `config/config.yaml` (the `references:` section), so filenames and layout must match those values (or update the config).
 
+**Indexes can be built for you.** The HISAT2 and Salmon indexes below are built
+automatically from source FASTAs when they are absent — just provide a genome FASTA
+(`genome_fasta`, default `ref/genome.fa`) and a transcriptome FASTA
+(`transcriptome_fasta`, default `ref/transcripts.fa`) instead of pre-building them.
+If a pre-built index is already present, the build step is skipped and the source
+FASTAs are never read. The GTF, RSeQC BED, and `picard.jar` are downloads, not built.
+
 | Path | Used by | What it is | How to obtain |
 |------|---------|------------|---------------|
-| `ref/ENSEMBL/genome.{1..8}.ht2` | `rna_all` | HISAT2 index (8 files, prefix `genome`) | `hisat2-build genome.fa ref/ENSEMBL/genome` — or download a prebuilt index from the [HISAT2 site](https://daehwankimlab.github.io/hisat2/download/) and rename the prefix to `genome` |
+| `ref/ENSEMBL/genome.{1..8}.ht2` | `rna_all` | HISAT2 index (8 files, prefix `genome`) | **Built automatically** from `genome_fasta` when absent. Or bring your own: `hisat2-build genome.fa ref/ENSEMBL/genome`, or a prebuilt index from the [HISAT2 site](https://daehwankimlab.github.io/hisat2/download/) (rename prefix to `genome`) |
 | `ref/Homo_sapiens.GRCh38.102.gtf` | `rna_all`, `qc_all` | ENSEMBL gene annotation (GTF, uncompressed) | `wget https://ftp.ensembl.org/pub/release-102/gtf/homo_sapiens/Homo_sapiens.GRCh38.102.gtf.gz && gunzip Homo_sapiens.GRCh38.102.gtf.gz` |
 | `ref/ENSEMBL_hg38.bed` | `qc_all` (RSeQC) | 12-column BED of gene models for RSeQC `read_distribution.py` / `tin.py` | Download from [RSeQC reference BEDs](https://sourceforge.net/projects/rseqc/files/BED/) or convert your GTF (`gtfToGenePred` → `genePredToBed`) |
 | `ref/picard.jar` | `qc_all` | Picard Tools executable JAR | `wget https://github.com/broadinstitute/picard/releases/latest/download/picard.jar -O ref/picard.jar` |
-| `ref/Salmon_index_Grch38/` | `salmon_all` | Standard Salmon transcriptome index (directory) | `salmon index -t transcripts.fa -i ref/Salmon_index_Grch38 -k 31` |
-| `ref/Salmon_index_decoy_Grch38/` | `salmon_all` | Decoy-aware Salmon index (transcriptome + genome decoys) | Follow the [Salmon decoy-aware guide](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode); output to `ref/Salmon_index_decoy_Grch38` |
+| `ref/Salmon_index_Grch38/` | `salmon_all` | Standard Salmon transcriptome index (directory) | **Built automatically** from `transcriptome_fasta` when absent. Or bring your own: `salmon index -t transcripts.fa -i ref/Salmon_index_Grch38 -k 31` |
+| `ref/Salmon_index_decoy_Grch38/` | `salmon_all` | Decoy-aware Salmon index (transcriptome + genome decoys) | **Built automatically** from `transcriptome_fasta` + `genome_fasta` when absent. Or follow the [Salmon decoy-aware guide](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode) |
+| `ref/genome.fa` | index build | Genome FASTA — source for building the HISAT2 index and Salmon decoys | UCSC/ENSEMBL genome FASTA; only needed if you don't provide pre-built HISAT2 / decoy indexes |
+| `ref/transcripts.fa` | index build | Transcriptome FASTA — source for building the Salmon indexes | ENSEMBL cDNA (e.g. `Homo_sapiens.GRCh38.cdna.all.fa`); only needed if you don't provide pre-built Salmon indexes |
 
 **Notes:**
 - The GTF/BED above are for ENSEMBL release 102, GRCh38 (human). For other species or releases, substitute the equivalent files and update the paths in the relevant snakefile.
@@ -381,12 +390,14 @@ All reference data is expected under the `ref/` directory at the project root. T
 
 ### Reference Files Checklist
 
-- [ ] **HISAT2 index** — `ref/ENSEMBL/genome.*.ht2` (for `rna_all`)
+Provide **either** a pre-built index **or** the source FASTA for each build step:
+
+- [ ] **HISAT2 index** — `ref/ENSEMBL/genome.*.ht2` **or** `ref/genome.fa` to auto-build (for `rna_all`)
 - [ ] **GTF annotation** — `ref/Homo_sapiens.GRCh38.102.gtf` (for `rna_all`, `qc_all`)
 - [ ] **BED annotation** — `ref/ENSEMBL_hg38.bed` (for `qc_all` / RSeQC)
 - [ ] **Picard JAR** — `ref/picard.jar` (for `qc_all`)
-- [ ] **Salmon standard index** — `ref/Salmon_index_Grch38/` (for `salmon_all`)
-- [ ] **Salmon decoy index** — `ref/Salmon_index_decoy_Grch38/` (for `salmon_all`)
+- [ ] **Salmon standard index** — `ref/Salmon_index_Grch38/` **or** `ref/transcripts.fa` to auto-build (for `salmon_all`)
+- [ ] **Salmon decoy index** — `ref/Salmon_index_decoy_Grch38/` **or** `ref/transcripts.fa` + `ref/genome.fa` to auto-build (for `salmon_all`)
 
 📖 **How to prepare references:** See [SETUP_GUIDE.md](SETUP_GUIDE.md#reference-preparation)
 
@@ -415,7 +426,8 @@ docker run --rm -v "$(pwd)":/workflow -e HOME=/tmp --user "$(id -u):$(id -g)" \
 | `genome` | `species`, `build`, `release` | Informational metadata for logs/docs |
 | `paths` | `data_dir`, `results_dir`, `logs_dir`, `ref_dir` | Where inputs/outputs live |
 | `samples` | `r1_suffix`, `r2_suffix` | FASTQ naming convention |
-| `references` | `hisat2_index`, `gtf`, `bed`, `picard_jar`, `salmon_index`, `salmon_decoy_index` | Reference file paths |
+| `references` | `hisat2_index`, `gtf`, `bed`, `picard_jar`, `salmon_index`, `salmon_decoy_index`, `genome_fasta`, `transcriptome_fasta` | Reference file paths (incl. source FASTAs for on-demand index building) |
+| `index` | `hisat2_splice_aware`, `salmon_kmer` | On-demand index-building options |
 | `threads` | `fastqc`, `fastp`, `hisat2`, `samtools`, `samtools_byname`, `featurecounts`, `multiqc`, `picard`, `qualimap_bamqc`, `qualimap_rnaseq`, `rseqc`, `salmon` | Per-rule CPU allocation |
 | `fastp` | `extra` | Extra fastp flags (e.g. SE vs PE, custom adapters) |
 | `hisat2` | `extra` | Library/alignment params |

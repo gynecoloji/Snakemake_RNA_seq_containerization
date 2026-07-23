@@ -29,6 +29,12 @@ PICARD_JAR = config["references"]["picard_jar"]
 SALMON_INDEX = config["references"]["salmon_index"]
 SALMON_DECOY_INDEX = config["references"]["salmon_decoy_index"]
 
+# Source FASTAs + build options for the on-demand index-building rules.
+GENOME_FASTA = config["references"].get("genome_fasta", "ref/genome.fa")
+TRANSCRIPTOME_FASTA = config["references"].get("transcriptome_fasta", "ref/transcripts.fa")
+HISAT2_SPLICE_AWARE = config.get("index", {}).get("hisat2_splice_aware", False)
+SALMON_KMER = config.get("index", {}).get("salmon_kmer", 31)
+
 JAVA_MEM = config["qualimap"]["java_mem"]
 PROTOCOL = config["qualimap"]["protocol"]
 

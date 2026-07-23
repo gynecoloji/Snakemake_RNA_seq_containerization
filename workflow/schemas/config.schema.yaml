@@ -48,6 +48,8 @@ properties:
       picard_jar:         { type: string, description: Picard Tools JAR. }
       salmon_index:       { type: string, description: Standard Salmon index dir. }
       salmon_decoy_index: { type: string, description: Decoy-aware Salmon index dir. }
+      genome_fasta:        { type: string, default: ref/genome.fa, description: "Source genome FASTA to build the HISAT2 index and Salmon decoys (used only when indexes are absent)." }
+      transcriptome_fasta: { type: string, default: ref/transcripts.fa, description: "Source transcriptome FASTA to build the Salmon indexes (used only when indexes are absent)." }
     required: [hisat2_index, gtf, bed, picard_jar, salmon_index, salmon_decoy_index]
 
   threads:
@@ -112,6 +114,13 @@ properties:
       lib_type: { type: string, default: "A" }
       extra:    { type: string, description: Extra salmon quant flags. }
     required: [lib_type, extra]
+
+  index:
+    type: object
+    description: Options for the on-demand index-building rules.
+    properties:
+      hisat2_splice_aware: { type: boolean, default: false, description: "Build the HISAT2 index with --ss/--exon from the GTF (needs ~160 GB RAM for human); false builds a plain genome index." }
+      salmon_kmer:         { type: integer, minimum: 1, default: 31, description: "salmon index -k (minimum acceptable match length)." }
 
 required:
   - samples_table

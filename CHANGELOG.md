@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- On-demand index building: `hisat2_build`, `salmon_index`, and
+  `salmon_decoy_index` rules build the HISAT2 and Salmon (standard + decoy-aware)
+  indexes from `references.genome_fasta` / `references.transcriptome_fasta` when
+  the indexes are absent, and are skipped when a pre-built index is present. Adds
+  an `index:` config section (`hisat2_splice_aware`, `salmon_kmer`).
+
 ## [1.0.0] - 2026-07-22
 
 Restructures the project into the [Snakemake Workflow Catalog](https://snakemake.github.io/snakemake-workflow-catalog/)

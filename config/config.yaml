@@ -45,6 +45,21 @@ references:
   picard_jar:  "ref/picard.jar"                           # Picard Tools JAR
   salmon_index:       "ref/Salmon_index_Grch38"           # Standard Salmon index
   salmon_decoy_index: "ref/Salmon_index_decoy_Grch38"     # Decoy-aware Salmon index
+  # Source FASTAs used to BUILD the indexes above when they are absent. If you bring
+  # your own pre-built indexes, these are never read. genome_fasta builds the HISAT2
+  # index and the Salmon decoys; transcriptome_fasta builds the Salmon indexes.
+  genome_fasta:        "ref/genome.fa"                    # genome FASTA (HISAT2 build + Salmon decoys)
+  transcriptome_fasta: "ref/transcripts.fa"               # transcriptome FASTA (Salmon build)
+
+# ---------------------------------------------------------------------------
+# Index building (used only when the indexes above are absent)
+# ---------------------------------------------------------------------------
+index:
+  # false = plain genome HISAT2 index (~6 GB RAM to build); HISAT2 still finds
+  # junctions de novo at run time. true = build with --ss/--exon extracted from the
+  # GTF (better on annotated junctions, but ~160 GB RAM for a human genome).
+  hisat2_splice_aware: false
+  salmon_kmer: 31              # salmon index -k (min match length; 31 suits >=75 bp reads)
 
 # ---------------------------------------------------------------------------
 # Per-rule thread counts
