@@ -4,7 +4,6 @@
 [![DOI](https://zenodo.org/badge/1126053465.svg)](https://doi.org/10.5281/zenodo.21502827)
 [![Release](https://img.shields.io/github/v/release/gynecoloji/snakemake_RNAseq?label=release)](https://github.com/gynecoloji/snakemake_RNAseq/releases)
 [![Snakemake](https://img.shields.io/badge/snakemake-%E2%89%A58.0-brightgreen)](https://snakemake.github.io)
-[![Docker Hub](https://img.shields.io/docker/pulls/gynecoloji/rnaseq_pipeline?logo=docker&label=docker%20pulls)](https://hub.docker.com/r/gynecoloji/rnaseq_pipeline)
 [![License: MIT](https://img.shields.io/github/license/gynecoloji/snakemake_RNAseq)](LICENSE)
 
 A comprehensive Snakemake workflow for processing and analyzing paired-end RNA-seq
@@ -51,7 +50,7 @@ conventions, so the workflow can be deployed into another project with
 - **Configurable filtering** — uniquely-mapped / properly-paired SAMtools filtering
   with tunable flags
 - **Conda environment management** (one env per rule) plus a ready-to-run
-  **Docker / Apptainer** image
+  **Apptainer** image
 - **Config-schema validation** on every run, and a `config/samples.csv` sample sheet
 
 ## Pipeline Components
@@ -212,7 +211,7 @@ conda activate rnaseq
 ```
 
 > **No local install?** Skip all of the above and use the container image instead —
-> see [Container Execution (Docker / Apptainer)](#container-execution-docker--apptainer).
+> see [Container Execution (Apptainer)](#container-execution-apptainer).
 
 ## Configuration
 
@@ -333,59 +332,47 @@ Config lives under the `deg:` section (`condition_col`, `reference`, `padj`, `lf
 `--use-conda`. **KEGG needs network access at runtime** (it queries the KEGG API); it
 is skipped gracefully (recorded as 0 terms) if unavailable.
 
-### Container Execution (Docker / Apptainer)
+### Container Execution (Apptainer)
 
-One prebuilt image covers the whole workflow — you install nothing except Docker or
-Apptainer. The image ships Snakemake + the pre-built per-rule conda envs (at
-`/opt/wf-conda`) and its entrypoint is
-`snakemake --use-conda --conda-frontend mamba --conda-prefix /opt/wf-conda`, so
-anything after the image name goes straight to `snakemake`.
+One prebuilt image covers the whole workflow — you install nothing except Apptainer.
+The image ships Snakemake + the pre-built per-rule conda envs (at `/opt/wf-conda`) and
+its entrypoint is `snakemake --use-conda --conda-frontend mamba --conda-prefix
+/opt/wf-conda`, so anything after the image name goes straight to `snakemake`.
+Genomes/FASTQs are **not** baked in — you provide them under `ref/` and `data/` and run
+from your project directory (Apptainer auto-mounts `$HOME`, `/tmp`, and the CWD, and
+runs as you, so no bind or `--user` is needed for the project files).
+
+**Get the image** — build it from [`apptainer.def`](apptainer.def) (run as a batch job;
+the Bioconductor solves are heavy), or pull a published SIF:
 
 ```bash
-# Docker
-docker pull gynecoloji/rnaseq_pipeline:latest
-
-# Apptainer / Singularity (HPC) — downloads + builds ./rnaseq-pipeline.sif from the image
-apptainer pull rnaseq-pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
+module load apptainer                                   # if your cluster uses modules
+# Build locally from the definition → ./rnaseq-pipeline.sif:
+apptainer build --fakeroot rnaseq-pipeline.sif apptainer.def
+# ...or pull a published SIF artifact (if one is hosted), e.g.:
+# apptainer pull rnaseq-pipeline.sif oras://docker.io/gynecoloji/rnaseq_pipeline:sif
 ```
 
-Genomes/FASTQs are **not** baked into the image; you mount your project directory at
-run time (see [`DOCKER.md`](DOCKER.md) for the exact `ref/` and `data/` files expected).
+> On nodes where you aren't in `/etc/subuid` there's no real `--fakeroot`; the build
+> falls back to a rootless namespace, which `apptainer.def` already handles.
 
-**Docker** — run from your project directory (which holds `workflow/`, `config/`,
-`ref/`, `data/`):
-
-```bash
-docker run --rm -v "$(pwd)":/workflow -e HOME=/tmp --user "$(id -u):$(id -g)" \
-    gynecoloji/rnaseq_pipeline:latest -s workflow/Snakefile --cores 16
-# or just one stage: append the rna_all / qc_all / salmon_all target
-```
-
-Convenience wrappers `docker compose` and `./run_pipeline.sh` are also provided:
+**Run** — from your project directory (which holds `workflow/`, `config/`, `ref/`, `data/`):
 
 ```bash
-./run_pipeline.sh --cores 16                     # everything
-docker compose run --rm rnaseq --cores 16 rna_all
-```
-
-**Apptainer / Singularity (HPC)** — Apptainer auto-mounts `$HOME`, `/tmp`, and the
-current directory, and runs as you (no `--user` needed). Load the module first if your
-cluster uses one (`module load apptainer`):
-
-```bash
-# One-time: download + build ./rnaseq-pipeline.sif from the Docker Hub image
-apptainer pull rnaseq-pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
-
-# Run from your project directory — the entrypoint IS snakemake, so just pass its args:
 apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 16            # everything
 apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 16 rna_all    # just one stage
+apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 8  deg_all    # opt-in DEG
 apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 1  -n         # dry run
 ```
 
-On clusters without Docker you can also build the image natively from
-[`apptainer.def`](apptainer.def): `apptainer build --fakeroot rnaseq-pipeline.sif apptainer.def`.
-Notes: bind references living outside the project dir with `--bind`; if Apptainer
-reports a read-only error writing to `/opt/wf-conda`, add `--writable-tmpfs`.
+The `./run_pipeline.sh` wrapper builds the SIF if needed and runs it:
+
+```bash
+./run_pipeline.sh --cores 16 rna_all
+```
+
+Notes: bind references living outside the project dir with `--bind /path:/path`; if
+Apptainer reports a read-only error writing to `/opt/wf-conda`, add `--writable-tmpfs`.
 
 ### Cluster Execution
 
@@ -516,7 +503,7 @@ snakemake_RNAseq/                      # Snakemake Workflow Catalog layout
 ├── data/                   # raw FASTQ files (you provide)
 ├── ref/                    # reference genome/annotation/indexes (you provide)
 ├── create_envs.smk         # build-time helper (pre-bakes the conda envs into the image)
-├── Dockerfile, docker-compose.yml, apptainer.def, run_pipeline.sh, DOCKER.md
+├── apptainer.def, run_pipeline.sh
 ├── results/                # all pipeline outputs (detailed above)
 └── logs/                   # per-rule logs
 ```

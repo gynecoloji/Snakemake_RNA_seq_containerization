@@ -1,6 +1,6 @@
 # Build-time helper: pre-create the per-rule conda envs (workflow/envs/*.yaml)
 # so they are baked into the image and reused at runtime via --conda-prefix.
-# Used only by the Dockerfile / apptainer.def:
+# Used only by apptainer.def:
 #   snakemake -s create_envs.smk --use-conda --conda-create-envs-only \
 #       --conda-frontend mamba --conda-prefix /opt/wf-conda --cores 1
 
