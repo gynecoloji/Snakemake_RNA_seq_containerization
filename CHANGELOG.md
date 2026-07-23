@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.1.1...v1.2.0) (2026-07-23)
+
+
+### Added
+
+* add chromosome-selection filters for alignment ([a618af9](https://github.com/gynecoloji/snakemake_RNAseq/commit/a618af98126d70e4e720557e293556d8b2b470f4))
+* add chromosome-selection filters for alignment ([fac6c56](https://github.com/gynecoloji/snakemake_RNAseq/commit/fac6c56f644651b0cd3b1ef73be299b78e309f6e))
+
 ## [1.1.1](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.1.0...v1.1.1) (2026-07-23)
 
 
