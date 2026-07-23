@@ -1,0 +1,136 @@
+"$schema": "http://json-schema.org/draft-07/schema#"
+title: RNA-seq pipeline — configuration
+description: >-
+  Parameters for the RNA-seq Snakemake workflow (HISAT2 gene quantification,
+  advanced QC, Salmon transcript quantification). Paths are relative to the
+  working directory (the repo root, /pipeline inside the container).
+type: object
+
+properties:
+  samples_table:
+    type: string
+    description: Path to the sample sheet CSV (column sample_id, optional condition).
+    default: config/samples.csv
+
+  genome:
+    type: object
+    description: Informational genome metadata (used in logs/docs only).
+    properties:
+      species: { type: string, default: Homo_sapiens }
+      build:   { type: string, default: GRCh38 }
+      release: { type: string, default: "102" }
+
+  paths:
+    type: object
+    description: Input/output directory layout.
+    properties:
+      data_dir:    { type: string, default: data }
+      results_dir: { type: string, default: results }
+      logs_dir:    { type: string, default: logs }
+      ref_dir:     { type: string, default: ref }
+    required: [data_dir, results_dir, logs_dir]
+
+  samples:
+    type: object
+    description: FASTQ naming convention.
+    properties:
+      r1_suffix: { type: string, default: _R1_001.fastq.gz }
+      r2_suffix: { type: string, default: _R2_001.fastq.gz }
+    required: [r1_suffix, r2_suffix]
+
+  references:
+    type: object
+    description: Reference file paths.
+    properties:
+      hisat2_index:       { type: string, description: HISAT2 index prefix. }
+      gtf:                { type: string, description: Gene annotation (GTF). }
+      bed:                { type: string, description: RSeQC 12-column BED. }
+      picard_jar:         { type: string, description: Picard Tools JAR. }
+      salmon_index:       { type: string, description: Standard Salmon index dir. }
+      salmon_decoy_index: { type: string, description: Decoy-aware Salmon index dir. }
+      genome_fasta:        { type: string, default: ref/genome.fa, description: "Source genome FASTA to build the HISAT2 index and Salmon decoys (used only when indexes are absent)." }
+      transcriptome_fasta: { type: string, default: ref/transcripts.fa, description: "Source transcriptome FASTA to build the Salmon indexes (used only when indexes are absent)." }
+    required: [hisat2_index, gtf, bed, picard_jar, salmon_index, salmon_decoy_index]
+
+  threads:
+    type: object
+    description: Per-rule CPU allocation.
+    properties:
+      fastqc:          { type: integer, minimum: 1, default: 8 }
+      fastp:           { type: integer, minimum: 1, default: 8 }
+      hisat2:          { type: integer, minimum: 1, default: 20 }
+      samtools:        { type: integer, minimum: 1, default: 20 }
+      samtools_byname: { type: integer, minimum: 1, default: 8 }
+      featurecounts:   { type: integer, minimum: 1, default: 20 }
+      multiqc:         { type: integer, minimum: 1, default: 2 }
+      picard:          { type: integer, minimum: 1, default: 4 }
+      qualimap_bamqc:  { type: integer, minimum: 1, default: 8 }
+      qualimap_rnaseq: { type: integer, minimum: 1, default: 8 }
+      rseqc:           { type: integer, minimum: 1, default: 4 }
+      salmon:          { type: integer, minimum: 1, default: 20 }
+
+  fastp:
+    type: object
+    properties:
+      extra: { type: string, description: Extra fastp flags, passed verbatim. }
+    required: [extra]
+
+  hisat2:
+    type: object
+    properties:
+      extra: { type: string, description: HISAT2 library/alignment params. }
+    required: [extra]
+
+  samtools_filter:
+    type: object
+    properties:
+      require_flags: { type: string, description: "samtools view -f value." }
+      exclude_flags: { type: string, description: "samtools view -F value." }
+      unique_tag:    { type: string, description: Post-filter grep tag for unique reads; empty to skip. }
+    required: [require_flags, exclude_flags, unique_tag]
+
+  featurecounts:
+    type: object
+    properties:
+      feature_type: { type: string, default: exon }
+      attribute:    { type: string, default: gene_id }
+      strandedness: { type: integer, enum: [0, 1, 2], default: 0 }
+      extra:        { type: string, description: Extra featureCounts flags. }
+    required: [feature_type, attribute, strandedness, extra]
+
+  qualimap:
+    type: object
+    properties:
+      java_mem: { type: string, default: 20G }
+      protocol:
+        type: string
+        enum: [strand-specific-forward, strand-specific-reverse, non-strand-specific]
+        default: non-strand-specific
+    required: [java_mem, protocol]
+
+  salmon:
+    type: object
+    properties:
+      lib_type: { type: string, default: "A" }
+      extra:    { type: string, description: Extra salmon quant flags. }
+    required: [lib_type, extra]
+
+  index:
+    type: object
+    description: Options for the on-demand index-building rules.
+    properties:
+      hisat2_splice_aware: { type: boolean, default: false, description: "Build the HISAT2 index with --ss/--exon from the GTF (needs ~160 GB RAM for human); false builds a plain genome index." }
+      salmon_kmer:         { type: integer, minimum: 1, default: 31, description: "salmon index -k (minimum acceptable match length)." }
+
+required:
+  - samples_table
+  - paths
+  - samples
+  - references
+  - threads
+  - fastp
+  - hisat2
+  - samtools_filter
+  - featurecounts
+  - qualimap
+  - salmon

@@ -1,23 +1,9 @@
-import os
-import glob
+# Advanced QC stage: Picard insert size, Qualimap bamqc + rnaseq, RSeQC
+# (read distribution, GC, TIN). Consumes the core stage's filtered BAMs.
+# Ported from the former snakefile_RNAQC (behaviour unchanged).
 
-configfile: "config.yaml"
 
-# ---- Resolve config shortcuts -------------------------------------------------
-RESULTS = config["paths"]["results_dir"]
-LOGS    = config["paths"]["logs_dir"]
-
-GTF        = config["references"]["gtf"]
-BED        = config["references"]["bed"]
-PICARD_JAR = config["references"]["picard_jar"]
-
-JAVA_MEM = config["qualimap"]["java_mem"]
-PROTOCOL = config["qualimap"]["protocol"]
-
-# Collect sample names
-SAMPLES, = glob_wildcards(f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam")
-
-rule all:
+rule qc_all:
     input:
         expand(f"{RESULTS}/picard/{{sample}}_insert_size_metrics.txt", sample=SAMPLES),
         expand(f"{RESULTS}/picard/{{sample}}_final_insert_size.txt", sample=SAMPLES),
@@ -26,22 +12,23 @@ rule all:
         expand(f"{RESULTS}/qualimap_rnaseq/{{sample}}", sample=SAMPLES),
         expand(f"{RESULTS}/rseqc/{{sample}}_RD_summary.txt", sample=SAMPLES),
         expand(f"{RESULTS}/rseqc/{{sample}}_GC_content.GC.xls", sample=SAMPLES),
-        expand(f"{RESULTS}/rseqc/{{sample}}.sorted.filtered.tin.xls", sample=SAMPLES)
+        expand(f"{RESULTS}/rseqc/{{sample}}.sorted.filtered.tin.xls", sample=SAMPLES),
+
 
 # Rule 1: Picard CollectInsertSizeMetrics + AWK extraction
 rule picard_mean_fragment_length:
     input:
-        bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam"
+        bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam",
     output:
         metrics=f"{RESULTS}/picard/{{sample}}_insert_size_metrics.txt",
-        final_metrics=f"{RESULTS}/picard/{{sample}}_final_insert_size.txt"
+        final_metrics=f"{RESULTS}/picard/{{sample}}_final_insert_size.txt",
     log:
-        f"{LOGS}/picard/{{sample}}_MeanFragmentLength.log"
+        f"{LOGS}/picard/{{sample}}_MeanFragmentLength.log",
     threads: config["threads"]["picard"]
     params:
-        picard_jar=PICARD_JAR
+        picard_jar=PICARD_JAR,
     conda:
-        "envs/qualimap.yaml"
+        "../envs/qualimap.yaml"
     shell:
         """
         mkdir -p {RESULTS}/picard {LOGS}/picard
@@ -54,22 +41,23 @@ rule picard_mean_fragment_length:
         awk 'NR==7,NR==8 {{print $0}}' {output.metrics} > {output.final_metrics}
         """
 
+
 # Rule 2: Qualimap BAMQC
 rule qualimap_bamqc:
     input:
-        bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam"
+        bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam",
     output:
         directory(f"{RESULTS}/qualimap_bamqc/{{sample}}"),
-        pdf=f"{RESULTS}/qualimap_bamqc/{{sample}}/{{sample}}.pdf"
+        pdf=f"{RESULTS}/qualimap_bamqc/{{sample}}/{{sample}}.pdf",
     log:
-        f"{LOGS}/qualimap/{{sample}}_bamqc.log"
+        f"{LOGS}/qualimap/{{sample}}_bamqc.log",
     threads: config["threads"]["qualimap_bamqc"]
     params:
         gtf=GTF,
         java_mem=JAVA_MEM,
-        protocol=PROTOCOL
+        protocol=PROTOCOL,
     conda:
-        "envs/qualimap.yaml"
+        "../envs/qualimap.yaml"
     shell:
         """
         mkdir -p {RESULTS}/qualimap_bamqc/{wildcards.sample} {LOGS}/qualimap
@@ -86,38 +74,40 @@ rule qualimap_bamqc:
             &> {log}
         """
 
+
 # Rule 3: Samtools sort by name
 rule samtools_sort_by_name:
     input:
-        f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam"
+        f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam",
     output:
-        f"{RESULTS}/samtools_byname/{{sample}}.sorted.byname.bam"
+        f"{RESULTS}/samtools_byname/{{sample}}.sorted.byname.bam",
     log:
-        f"{LOGS}/samtools_byname/{{sample}}.log"
+        f"{LOGS}/samtools_byname/{{sample}}.log",
     threads: config["threads"]["samtools_byname"]
     conda:
-        "envs/snakemake.yaml"
+        "../envs/snakemake.yaml"
     shell:
         """
         mkdir -p {RESULTS}/samtools_byname {LOGS}/samtools_byname
         samtools sort -n -@ {threads} -o {output} {input} &> {log}
         """
 
+
 # Rule 4: Qualimap RNAseq QC
 rule qualimap_rnaseq:
     input:
-        bam=f"{RESULTS}/samtools_byname/{{sample}}.sorted.byname.bam"
+        bam=f"{RESULTS}/samtools_byname/{{sample}}.sorted.byname.bam",
     output:
-        directory(f"{RESULTS}/qualimap_rnaseq/{{sample}}")
+        directory(f"{RESULTS}/qualimap_rnaseq/{{sample}}"),
     log:
-        f"{LOGS}/qualimap/{{sample}}_rnaseq.log"
+        f"{LOGS}/qualimap/{{sample}}_rnaseq.log",
     threads: config["threads"]["qualimap_rnaseq"]
     params:
         gtf=GTF,
         java_mem=JAVA_MEM,
-        protocol=PROTOCOL
+        protocol=PROTOCOL,
     conda:
-        "envs/qualimap.yaml"
+        "../envs/qualimap.yaml"
     shell:
         """
         mkdir -p {RESULTS}/qualimap_rnaseq/{wildcards.sample} {LOGS}/qualimap
@@ -133,57 +123,60 @@ rule qualimap_rnaseq:
             &> {log}
         """
 
-# RSeQC rules use different conda environment "RSeQC"
+
+# RSeQC rules use a different conda environment (RSeQC)
 
 # Rule 5: RSeQC Read distribution
 rule rseqc_read_distribution:
     input:
-        bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam"
+        bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam",
     output:
-        f"{RESULTS}/rseqc/{{sample}}_RD_summary.txt"
+        f"{RESULTS}/rseqc/{{sample}}_RD_summary.txt",
     log:
-        f"{LOGS}/rseqc/{{sample}}_read_distribution.log"
+        f"{LOGS}/rseqc/{{sample}}_read_distribution.log",
     params:
-        refbed=BED
+        refbed=BED,
     threads: config["threads"]["rseqc"]
     conda:
-        "envs/RSeQC.yaml"
+        "../envs/RSeQC.yaml"
     shell:
         """
         mkdir -p {RESULTS}/rseqc {LOGS}/rseqc
         read_distribution.py -i {input.bam} -r {params.refbed} > {output} 2> {log}
         """
 
+
 # Rule 6: RSeQC GC content
 rule rseqc_gc_content:
     input:
-        bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam"
+        bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam",
     output:
-        f"{RESULTS}/rseqc/{{sample}}_GC_content.GC.xls"
+        f"{RESULTS}/rseqc/{{sample}}_GC_content.GC.xls",
     log:
-        f"{LOGS}/rseqc/{{sample}}_gc_content.log"
+        f"{LOGS}/rseqc/{{sample}}_gc_content.log",
     threads: config["threads"]["rseqc"]
     conda:
-        "envs/RSeQC.yaml"
+        "../envs/RSeQC.yaml"
     shell:
         """
         mkdir -p {RESULTS}/rseqc {LOGS}/rseqc
         read_GC.py -i {input.bam} -o {RESULTS}/rseqc/{wildcards.sample}_GC_content &> {log}
         """
 
+
 # Rule 7: RSeQC TIN (Transcript Integrity Number)
 rule rseqc_tin:
     input:
-        bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam"
+        bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam",
     output:
-        f"{RESULTS}/rseqc/{{sample}}.sorted.filtered.tin.xls"
+        f"{RESULTS}/rseqc/{{sample}}.sorted.filtered.tin.xls",
     log:
-        f"{LOGS}/rseqc/{{sample}}_TIN.log"
+        f"{LOGS}/rseqc/{{sample}}_TIN.log",
     params:
-        refbed=BED
+        refbed=BED,
     threads: config["threads"]["rseqc"]
     conda:
-        "envs/RSeQC.yaml"
+        "../envs/RSeQC.yaml"
     shell:
         """
         mkdir -p {RESULTS}/rseqc {LOGS}/rseqc

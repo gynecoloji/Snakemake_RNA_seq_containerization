@@ -1,68 +1,27 @@
-version: '3.8'
+# Run the RNA-seq Snakemake workflow in a container.
+#
+#   docker compose build                                  # build (pre-bakes conda envs)
+#   docker compose run --rm rnaseq --cores 8              # everything
+#   docker compose run --rm rnaseq --cores 8 rna_all      # core stage only
+#   docker compose run --rm rnaseq -n                     # dry run
+#
+# The whole project is mounted at /workflow; the pre-built envs live at
+# /opt/wf-conda inside the image (outside the mount, so they are not hidden).
 
 services:
-  rnaseq-pipeline:
+  rnaseq:
     build:
       context: .
       dockerfile: Dockerfile
     image: rnaseq-pipeline:latest
-    container_name: snakemake_rnaseq
-    
+    working_dir: /workflow
     volumes:
-      # Mount data directory
-      - ./data:/pipeline/data
-      
-      # Mount reference directory
-      - ./ref:/pipeline/ref
-      
-      # Mount results directory
-      - ./results:/pipeline/results
-      
-      # Mount logs directory
-      - ./logs:/pipeline/logs
-      
-      # Mount Snakefiles (for easy editing without rebuild)
-      - ./snakefile_RNA:/pipeline/snakefile_RNA
-      - ./snakefile_RNAQC:/pipeline/snakefile_RNAQC
-      - ./snakefile_salmon:/pipeline/snakefile_salmon
-    
-    # Resource limits (adjust based on your system)
-    deploy:
-      resources:
-        limits:
-          cpus: '20'
-          memory: 64G
-    
-    # Keep container running for interactive use
-    stdin_open: true
-    tty: true
-    
-    # Override entrypoint for custom commands
-    # command: ["bash"]
-    
+      - ./:/workflow
+    # Write outputs as the host user (avoids root-owned results/). Export
+    # DOCKER_UID/DOCKER_GID or edit these defaults as needed.
+    user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
     environment:
-      - THREADS=20
-      - SNAKEMAKE_CORES=20
-
-  # Optional: Jupyter notebook service for analysis
-  jupyter:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: rnaseq-pipeline:latest
-    container_name: rnaseq_jupyter
-    
-    ports:
-      - "8888:8888"
-    
-    volumes:
-      - ./:/pipeline
-    
-    command: >
-      bash -c "conda run -n snakemake pip install jupyter &&
-               conda run -n snakemake jupyter notebook
-               --ip=0.0.0.0 --port=8888 --no-browser
-               --allow-root --NotebookApp.token='rnaseq'"
-    
-    profiles:
-      - jupyter
+      HOME: /tmp
+    # The image ENTRYPOINT already sets `-s workflow/Snakefile --use-conda ...`,
+    # so this only needs the cores (and an optional target). Override on the CLI.
+    command: ["--cores", "8"]

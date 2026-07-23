@@ -1,0 +1,65 @@
+# Native Apptainer build of the RNA-seq workflow image (for HPC without Docker):
+#   module load apptainer
+#   apptainer build --fakeroot rnaseq-pipeline.sif apptainer.def   # from repo root
+#   apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 16
+#
+# Ships Snakemake plus the 4 pre-built per-rule conda envs at /opt/wf-conda.
+# Genomes/FASTQs are NOT baked in: bind-mount your project at runtime.
+
+Bootstrap: docker
+From: condaforge/miniforge3:latest
+
+%files
+    workflow /workflow/
+    config /workflow/
+    tests /workflow/
+    create_envs.smk /workflow/
+
+%post
+    set -eu
+    export DEBIAN_FRONTEND=noninteractive
+    export WF_CONDA_PREFIX=/opt/wf-conda
+
+    apt-get update
+    apt-get install -y --no-install-recommends git procps ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    conda config --system --set channel_priority flexible
+    conda tos accept --override-channels \
+        --channel https://repo.anaconda.com/pkgs/main \
+        --channel https://repo.anaconda.com/pkgs/r 2>/dev/null || true
+
+    mamba create -y -n driver -c conda-forge -c bioconda \
+        python=3.12 snakemake-minimal pandas
+    mamba clean -afy
+    export PATH=/opt/conda/envs/driver/bin:$PATH
+
+    cd /workflow
+    snakemake -s create_envs.smk --use-conda --conda-create-envs-only \
+        --conda-frontend mamba --conda-prefix "$WF_CONDA_PREFIX" --cores 1
+    mamba clean -afy
+    rm -rf /workflow/build /workflow/.snakemake
+
+%environment
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    export WF_CONDA_PREFIX=/opt/wf-conda
+    export PATH=/opt/conda/envs/driver/bin:$PATH
+
+%runscript
+    exec snakemake --use-conda --conda-frontend mamba \
+        --conda-prefix /opt/wf-conda "$@"
+
+%labels
+    org.opencontainers.image.title rnaseq-snakemake
+    org.opencontainers.image.description RNA-seq (HISAT2 + QC + Salmon) Snakemake workflow, --use-conda
+    org.opencontainers.image.source https://github.com/gynecoloji/snakemake_RNAseq
+
+%help
+    RNA-seq Snakemake workflow (HISAT2 gene quant + advanced QC + Salmon).
+
+    Run from your project directory (Apptainer auto-mounts the CWD):
+      apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 16
+      apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 16 rna_all
+
+    Reference genomes/annotation must be present under ref/ (see config/README.md).

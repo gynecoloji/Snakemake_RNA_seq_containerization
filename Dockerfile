@@ -1,60 +1,51 @@
-# Use Miniconda3 as base image
-FROM continuumio/miniconda3:latest
+# RNA-seq Snakemake workflow container.
+#
+# The workflow runs one conda env PER RULE (workflow/envs/*.yaml). This image
+# ships Snakemake + the 4 pre-built per-rule conda envs and runs --use-conda.
+# Large genomes/FASTQs are NOT baked in — mount your project at runtime
+# (see docker-compose.yml / run_pipeline.sh / DOCKER.md).
 
-# IMPORTANT: Use bash instead of sh
-SHELL ["/bin/bash", "-c"]
+# For a fully reproducible build, pin the base, e.g. FROM condaforge/miniforge3:24.11.3-2
+FROM condaforge/miniforge3:latest
 
-# Set metadata
-LABEL maintainer="gynecoloji"
-LABEL description="Docker image for Advanced RNA-seq Analysis Pipeline"
-LABEL version="1.0"
+LABEL org.opencontainers.image.title="rnaseq-snakemake"
+LABEL org.opencontainers.image.description="RNA-seq (HISAT2 + QC + Salmon) Snakemake workflow, --use-conda"
 
-# Set working directory
-WORKDIR /pipeline
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    WF_CONDA_PREFIX=/opt/wf-conda
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    wget \
-    git \
-    curl \
-    default-jdk \
-    libz-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git procps ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy environment files first (for better caching)
-COPY envs/ /pipeline/envs/
+# FLEXIBLE channel priority (the env YAMLs are fully-pinned exports spanning
+# conda-forge/bioconda/defaults); best-effort accept the Anaconda defaults ToS.
+RUN conda config --system --set channel_priority flexible && \
+    ( conda tos accept --override-channels \
+        --channel https://repo.anaconda.com/pkgs/main \
+        --channel https://repo.anaconda.com/pkgs/r 2>/dev/null || true )
 
-# Create conda environments
-RUN conda env create -f /pipeline/envs/snakemake.yaml && \
-    conda env create -f /pipeline/envs/qualimap.yaml && \
-    conda env create -f /pipeline/envs/RSeQC.yaml && \
-    conda env create -f /pipeline/envs/salmon.yaml && \
-    conda clean -a -y
+# Snakemake driver in its OWN env (miniforge base pins Python 3.13; snakemake
+# needs <3.13). pandas is imported by common.smk at parse time.
+RUN mamba create -y -n driver -c conda-forge -c bioconda \
+        python=3.12 snakemake-minimal pandas && \
+    mamba clean -afy
+ENV PATH=/opt/conda/envs/driver/bin:$PATH
 
-# Initialize conda and set default environment
-RUN source /opt/conda/etc/profile.d/conda.sh && \
-    conda init bash && \
-    echo "conda activate snakemake" >> ~/.bashrc
+WORKDIR /workflow
 
-# Add snakemake environment to PATH (so it works with --no-home)
-ENV PATH="/opt/conda/envs/snakemake/bin:$PATH"
+# Pre-build the 4 per-rule envs BEFORE copying workflow code (cache-friendly).
+COPY workflow/envs/ ./workflow/envs/
+COPY create_envs.smk ./
+RUN snakemake -s create_envs.smk --use-conda --conda-create-envs-only \
+        --conda-frontend mamba --conda-prefix "${WF_CONDA_PREFIX}" --cores 1 && \
+    mamba clean -afy && \
+    rm -rf build .snakemake
 
-# Copy the entire pipeline
-COPY . /pipeline/
+COPY workflow/ ./workflow/
+COPY config/ ./config/
+COPY tests/ ./tests/
 
-# Create necessary directories
-RUN mkdir -p /pipeline/data \
-    /pipeline/results \
-    /pipeline/logs \
-    /pipeline/ref
-
-# Make entrypoint script executable
-RUN chmod +x /pipeline/entrypoint.sh
-
-# Set the entrypoint
-ENTRYPOINT ["/pipeline/entrypoint.sh"]
-
-# Default command
-CMD ["--help"]
+ENTRYPOINT ["snakemake", "--use-conda", "--conda-frontend", "mamba", "--conda-prefix", "/opt/wf-conda"]
+CMD ["-s", "workflow/Snakefile", "--cores", "4"]

@@ -1,13 +1,14 @@
-# Default: use LF
+# Keep generated artifacts out of GitHub's language bar.
+images/rulegraph.svg    linguist-generated
+.test/**                linguist-generated
+
+# Normalize text to LF; scripts/Snakemake files MUST stay LF for Linux containers.
 * text=auto eol=lf
-
-# Shell scripts must be LF
-*.sh text eol=lf
-
-# Docker / config files
-Dockerfile text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
-
-# Markdown is safe as LF
-*.md text eol=lf
+*.sh        text eol=lf
+*.py        text eol=lf
+*.smk       text eol=lf
+Snakefile   text eol=lf
+Dockerfile  text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.md        text eol=lf
