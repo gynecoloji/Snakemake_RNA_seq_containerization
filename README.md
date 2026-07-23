@@ -129,7 +129,7 @@ ref/
 ├── genome.fa                          # genome FASTA   (source for the HISAT2 index + Salmon decoys)
 ├── transcripts.fa                     # transcriptome FASTA   (source for the Salmon indexes)
 ├── gencode.v36.annotation.gtf        # gene annotation (featureCounts, Qualimap)
-├── ENSEMBL_hg38.bed                   # 12-column BED of gene models (RSeQC)
+├── gencode.v36.bed                    # 12-column BED of gene models (RSeQC)   — or build from the GTF
 ├── picard.jar                         # Picard (insert-size QC)
 ├── Salmon_index_Grch38/               # standard Salmon index      — or build from transcriptome_fasta
 └── Salmon_index_decoy_Grch38/         # decoy-aware Salmon index    — or build from transcriptome_fasta + genome_fasta
@@ -162,21 +162,24 @@ wget -O picard.jar https://github.com/broadinstitute/picard/releases/latest/down
 cd ..
 ```
 
-The RSeQC BED (`ENSEMBL_hg38.bed`) is a 12-column gene-model BED; download one from
-the [RSeQC reference BEDs](https://sourceforge.net/projects/rseqc/files/BED/) or
-convert your GTF (`gtfToGenePred` → `genePredToBed`).
+The RSeQC BED (`gencode.v36.bed`) is a 12-column gene-model BED. It is **built
+automatically from the GTF** by the `build_rseqc_bed` rule (UCSC `gtfToGenePred` →
+`genePredToBed`, in `workflow/envs/ucsc.yaml`), so it stays `chr`-prefixed and in sync
+with your annotation — you only need `references.gtf` present. Provide your own BED12 at
+`references.bed` to skip the build.
 
 ### On-demand index building
 
-When a HISAT2 or Salmon index is absent, the workflow builds it from the source
-FASTAs and skips the build when a pre-built index is already present (in that case
-the source FASTAs are never read):
+When a HISAT2 or Salmon index — or the RSeQC BED — is absent, the workflow builds it
+from the source files and skips the build when a pre-built one is already present (in
+that case the source files are never read):
 
 | Rule | Builds from | Produces |
 |---|---|---|
 | `hisat2_build` | `references.genome_fasta` (+ GTF if `index.hisat2_splice_aware`) | `ref/ENSEMBL/genome.*.ht2` |
 | `salmon_index` | `references.transcriptome_fasta` | `ref/Salmon_index_Grch38/` |
 | `salmon_decoy_index` | `references.transcriptome_fasta` + `references.genome_fasta` | `ref/Salmon_index_decoy_Grch38/` |
+| `build_rseqc_bed` | `references.gtf` | `references.bed` (RSeQC BED12) |
 
 The default HISAT2 build is a plain genome index (~6 GB RAM); HISAT2 still finds
 junctions de novo at run time. Set `index.hisat2_splice_aware: true` to build with
@@ -218,7 +221,7 @@ samples_table: "config/samples.csv"                     # sample sheet (sample_i
 references:
   hisat2_index:       "ref/ENSEMBL/genome"              # HISAT2 index prefix (or provide genome_fasta)
   gtf:                "ref/gencode.v36.annotation.gtf"   # gene annotation (GENCODE, chr-prefixed)
-  bed:                "ref/ENSEMBL_hg38.bed"             # RSeQC 12-column BED
+  bed:                "ref/gencode.v36.bed"              # RSeQC 12-column BED (auto-built from the GTF)
   salmon_index:       "ref/Salmon_index_Grch38"         # (or provide transcriptome_fasta)
   genome_fasta:       "ref/genome.fa"                    # source for building the HISAT2 index / decoys
   transcriptome_fasta:"ref/transcripts.fa"              # source for building the Salmon indexes

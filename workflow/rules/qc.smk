@@ -124,12 +124,35 @@ rule qualimap_rnaseq:
         """
 
 
+# Build the RSeQC gene-model BED (BED12) from the GTF with UCSC tools, chr-prefixed to
+# match the alignments. Only runs when the configured `bed` is absent; provide your own
+# BED12 to skip it (the GTF is then not read for this step).
+rule build_rseqc_bed:
+    input:
+        gtf=GTF,
+    output:
+        BED,
+    log:
+        f"{LOGS}/rseqc_bed/build.log",
+    conda:
+        "../envs/ucsc.yaml"
+    shell:
+        """
+        mkdir -p $(dirname {output}) {LOGS}/rseqc_bed
+        GP={output}.genePred
+        gtfToGenePred -ignoreGroupsWithoutExons {input.gtf} "$GP" 2> {log}
+        genePredToBed "$GP" {output} 2>> {log}
+        rm -f "$GP"
+        """
+
+
 # RSeQC rules use a different conda environment (RSeQC)
 
 # Rule 5: RSeQC Read distribution
 rule rseqc_read_distribution:
     input:
         bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam",
+        bed=BED,
     output:
         f"{RESULTS}/rseqc/{{sample}}_RD_summary.txt",
     log:
@@ -168,6 +191,7 @@ rule rseqc_gc_content:
 rule rseqc_tin:
     input:
         bam=f"{RESULTS}/samtools/{{sample}}.sorted.filtered.bam",
+        bed=BED,
     output:
         f"{RESULTS}/rseqc/{{sample}}.sorted.filtered.tin.xls",
     log:

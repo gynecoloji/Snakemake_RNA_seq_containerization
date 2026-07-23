@@ -41,7 +41,7 @@ samples:
 references:
   hisat2_index: "ref/ENSEMBL/genome"                      # HISAT2 index prefix
   gtf:         "ref/gencode.v36.annotation.gtf"           # Gene annotation (GTF, GENCODE chr-prefixed)
-  bed:         "ref/ENSEMBL_hg38.bed"                     # RSeQC 12-col BED
+  bed:         "ref/gencode.v36.bed"                      # RSeQC 12-col BED (GENCODE, chr-prefixed)
   picard_jar:  "ref/picard.jar"                           # Picard Tools JAR
   salmon_index:       "ref/Salmon_index_Grch38"           # Standard Salmon index
   salmon_decoy_index: "ref/Salmon_index_decoy_Grch38"     # Decoy-aware Salmon index

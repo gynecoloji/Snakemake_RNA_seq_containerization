@@ -24,7 +24,7 @@ jobs:
         # so the index-build rules are scheduled and need genome_fasta/transcriptome_fasta.
         run: |
           mkdir -p data ref
-          touch ref/genome.fa ref/transcripts.fa
+          touch ref/genome.fa ref/transcripts.fa ref/gencode.v36.annotation.gtf
           python - <<'PY'
           import csv, pathlib
           for r in csv.DictReader(open("config/samples.csv")):
