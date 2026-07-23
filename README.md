@@ -221,6 +221,9 @@ references:
 Common adjustments (see `config/config.yaml` for the full annotated file):
 - **Strandedness** — `featurecounts.strandedness` (0 unstranded / 1 forward / 2 reverse)
   and `qualimap.protocol`.
+- **Restrict chromosomes** — `index.align_chroms` subsets the genome when building the
+  HISAT2 index (reads then align only to those chromosomes); `samtools_filter.keep_chroms`
+  keeps, after alignment, only reads on the listed chromosomes. Empty = no filtering.
 - **Per-rule threads** — the `threads:` section.
 - **Low RAM** — lower `threads.*` and `qualimap.java_mem`.
 
