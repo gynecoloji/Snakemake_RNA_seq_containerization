@@ -1,0 +1,8 @@
+name: ucsc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - ucsc-gtftogenepred
+  - ucsc-genepredtobed

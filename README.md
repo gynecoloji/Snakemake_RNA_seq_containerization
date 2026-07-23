@@ -128,48 +128,58 @@ ref/
 ├── ENSEMBL/genome.{1..8}.ht2          # HISAT2 index (prefix `genome`)   — or build from genome_fasta
 ├── genome.fa                          # genome FASTA   (source for the HISAT2 index + Salmon decoys)
 ├── transcripts.fa                     # transcriptome FASTA   (source for the Salmon indexes)
-├── Homo_sapiens.GRCh38.102.gtf        # gene annotation (featureCounts, Qualimap)
-├── ENSEMBL_hg38.bed                   # 12-column BED of gene models (RSeQC)
+├── gencode.v36.annotation.gtf        # gene annotation (featureCounts, Qualimap)
+├── gencode.v36.bed                    # 12-column BED of gene models (RSeQC)   — or build from the GTF
 ├── picard.jar                         # Picard (insert-size QC)
 ├── Salmon_index_Grch38/               # standard Salmon index      — or build from transcriptome_fasta
 └── Salmon_index_decoy_Grch38/         # decoy-aware Salmon index    — or build from transcriptome_fasta + genome_fasta
 ```
 
 Provide **either** an index **or** the source FASTA for each build step; only the
-files required for the stage(s) you run need to be present. Obtaining the common
-files (ENSEMBL GRCh38, release 102):
+files required for the stage(s) you run need to be present. The defaults use
+**GENCODE GRCh38, release 36**. Because GENCODE is `chr`-prefixed (`chr1 … chrM`),
+the genome, transcriptome, and GTF must **all** be GENCODE — do not mix with ENSEMBL
+(whose chromosomes are named `1 … MT`), or featureCounts/alignment will fail to match.
 
 ```bash
 cd ref
 
-# Genome + transcriptome FASTAs (to build the indexes) and the GTF
-curl -O https://ftp.ensembl.org/pub/release-102/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
-gunzip Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz && mv Homo_sapiens.GRCh38.dna.primary_assembly.fa genome.fa
-curl -O https://ftp.ensembl.org/pub/release-102/fasta/homo_sapiens/cdna/Homo_sapiens.GRCh38.cdna.all.fa.gz
-gunzip Homo_sapiens.GRCh38.cdna.all.fa.gz && mv Homo_sapiens.GRCh38.cdna.all.fa transcripts.fa
-curl -O https://ftp.ensembl.org/pub/release-102/gtf/homo_sapiens/Homo_sapiens.GRCh38.102.gtf.gz && gunzip Homo_sapiens.GRCh38.102.gtf.gz
+# Genome FASTA (source for the HISAT2 index + Salmon decoys)  ->  ref/genome.fa
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_36/GRCh38.primary_assembly.genome.fa.gz
+gunzip GRCh38.primary_assembly.genome.fa.gz && mv GRCh38.primary_assembly.genome.fa genome.fa
 
-# Picard (insert-size QC)
-curl -L -o picard.jar https://github.com/broadinstitute/picard/releases/latest/download/picard.jar
+# Transcriptome FASTA (source for the Salmon indexes)  ->  ref/transcripts.fa
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_36/gencode.v36.transcripts.fa.gz
+gunzip gencode.v36.transcripts.fa.gz && mv gencode.v36.transcripts.fa transcripts.fa
+
+# Gene annotation GTF (featureCounts, Qualimap)  ->  ref/gencode.v36.annotation.gtf
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_36/gencode.v36.annotation.gtf.gz
+gunzip gencode.v36.annotation.gtf.gz
+
+# Picard (insert-size QC)  ->  ref/picard.jar
+wget -O picard.jar https://github.com/broadinstitute/picard/releases/latest/download/picard.jar
 
 cd ..
 ```
 
-The RSeQC BED (`ENSEMBL_hg38.bed`) is a 12-column gene-model BED; download one from
-the [RSeQC reference BEDs](https://sourceforge.net/projects/rseqc/files/BED/) or
-convert your GTF (`gtfToGenePred` → `genePredToBed`).
+The RSeQC BED (`gencode.v36.bed`) is a 12-column gene-model BED. It is **built
+automatically from the GTF** by the `build_rseqc_bed` rule (UCSC `gtfToGenePred` →
+`genePredToBed`, in `workflow/envs/ucsc.yaml`), so it stays `chr`-prefixed and in sync
+with your annotation — you only need `references.gtf` present. Provide your own BED12 at
+`references.bed` to skip the build.
 
 ### On-demand index building
 
-When a HISAT2 or Salmon index is absent, the workflow builds it from the source
-FASTAs and skips the build when a pre-built index is already present (in that case
-the source FASTAs are never read):
+When a HISAT2 or Salmon index — or the RSeQC BED — is absent, the workflow builds it
+from the source files and skips the build when a pre-built one is already present (in
+that case the source files are never read):
 
 | Rule | Builds from | Produces |
 |---|---|---|
 | `hisat2_build` | `references.genome_fasta` (+ GTF if `index.hisat2_splice_aware`) | `ref/ENSEMBL/genome.*.ht2` |
 | `salmon_index` | `references.transcriptome_fasta` | `ref/Salmon_index_Grch38/` |
 | `salmon_decoy_index` | `references.transcriptome_fasta` + `references.genome_fasta` | `ref/Salmon_index_decoy_Grch38/` |
+| `build_rseqc_bed` | `references.gtf` | `references.bed` (RSeQC BED12) |
 
 The default HISAT2 build is a plain genome index (~6 GB RAM); HISAT2 still finds
 junctions de novo at run time. Set `index.hisat2_splice_aware: true` to build with
@@ -210,8 +220,8 @@ At minimum, point the reference-file paths at the files you provide:
 samples_table: "config/samples.csv"                     # sample sheet (sample_id[, condition])
 references:
   hisat2_index:       "ref/ENSEMBL/genome"              # HISAT2 index prefix (or provide genome_fasta)
-  gtf:                "ref/Homo_sapiens.GRCh38.102.gtf"  # gene annotation
-  bed:                "ref/ENSEMBL_hg38.bed"             # RSeQC 12-column BED
+  gtf:                "ref/gencode.v36.annotation.gtf"   # gene annotation (GENCODE, chr-prefixed)
+  bed:                "ref/gencode.v36.bed"              # RSeQC 12-column BED (auto-built from the GTF)
   salmon_index:       "ref/Salmon_index_Grch38"         # (or provide transcriptome_fasta)
   genome_fasta:       "ref/genome.fa"                    # source for building the HISAT2 index / decoys
   transcriptome_fasta:"ref/transcripts.fa"              # source for building the Salmon indexes
@@ -550,6 +560,6 @@ developers of all the integrated tools.
 
 ---
 
-**Note**: This pipeline ships with defaults for human genome analysis (GRCh38, ENSEMBL
-release 102) but can be adapted for other organisms by updating the reference files
-and parameters in `config/config.yaml`.
+**Note**: This pipeline ships with defaults for human genome analysis (GRCh38, GENCODE
+release 36) but can be adapted for other organisms/releases by updating the reference
+files and parameters in `config/config.yaml`.
