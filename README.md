@@ -13,7 +13,7 @@ with an extensive quality-control stage.
 
 ## Overview
 
-This pipeline integrates three complementary components for complete RNA-seq analysis:
+This pipeline integrates three core components plus an opt-in downstream analysis:
 
 1. **Core RNA-seq stage** (`rna_all` target) - Raw FASTQ → FastQC → fastp trimming →
    HISAT2 spliced alignment → SAMtools filtering/sorting → **featureCounts** gene-level
@@ -23,10 +23,14 @@ This pipeline integrates three complementary components for complete RNA-seq ana
    distribution, GC content, and transcript integrity (TIN).
 3. **Salmon stage** (`salmon_all` target) - alignment-free transcript quantification
    with both a standard and a decoy-aware index.
+4. **Differential expression** (`deg_all` target, *opt-in*) - DESeq2 differential
+   expression over the featureCounts matrix plus GO/KEGG enrichment (see
+   [Differential Expression](#differential-expression-opt-in-r--deseq2)).
 
-All three stages live in a single standard-layout `workflow/Snakefile`: one
+The three core stages live in a single standard-layout `workflow/Snakefile`: one
 `snakemake --use-conda` run builds them in dependency order (unified DAG). Run a
-subset with the `rna_all`, `qc_all`, or `salmon_all` targets. The layout follows the
+subset with the `rna_all`, `qc_all`, or `salmon_all` targets; differential expression
+is opt-in (`deg_all`, needs ≥2 conditions). The layout follows the
 [Snakemake Workflow Catalog](https://snakemake.github.io/snakemake-workflow-catalog/)
 conventions, so the workflow can be deployed into another project with
 `snakedeploy deploy-workflow` (see [Deploying with snakedeploy](#deploying-with-snakedeploy)).
@@ -92,6 +96,13 @@ Alignment-free transcript quantification of the trimmed reads against:
 Each writes `quant.sf` per sample (transcript TPM/counts) for isoform-level analysis
 (e.g. `tximport` → DESeq2, or sleuth).
 
+### 4. Differential expression (`deg_all` target, opt-in)
+
+Downstream **DESeq2** differential expression over the `featureCounts` gene matrix,
+run per non-reference condition level (vs the reference), plus **GO/KEGG**
+over-representation on the up/down gene sets. Opt-in — see
+[Differential Expression](#differential-expression-opt-in-r--deseq2).
+
 ## Requirements
 
 - [Snakemake](https://snakemake.readthedocs.io/) ≥8.0
@@ -112,7 +123,7 @@ Each writes `quant.sf` per sample (transcript TPM/counts) for isoform-level anal
 - **RSeQC** (read distribution, GC content, TIN)
 - **Salmon** (transcript quantification; also builds the Salmon indexes)
 
-The four per-rule environments (`workflow/envs/{snakemake,qualimap,RSeQC,salmon}.yaml`)
+The per-rule environments under `workflow/envs/`
 are created automatically on the first `--use-conda` run — you do not build them by hand.
 
 ### Reference Files (`ref/`)
@@ -294,10 +305,38 @@ snakemake -s workflow/Snakefile --use-conda --cores 20 salmon_all   # Salmon onl
 
 `qc_all` and `salmon_all` automatically build their core-stage prerequisites.
 
+### Differential Expression (opt-in, R / DESeq2)
+
+A downstream differential-expression + enrichment stage over the `featureCounts`
+matrix. It is **not** part of the default target (it needs ≥2 levels in the
+`condition` column of `config/samples.csv`); request it explicitly:
+
+```bash
+snakemake -s workflow/Snakefile --use-conda --cores 8 deg_all
+```
+
+One contrast is run per non-reference condition level (vs `deg.reference`), written to
+`results/deg/<level>_vs_<reference>/`:
+
+- **DESeq2** — `deseq2_results.tsv` (apeglm-shrunk log2FC), `significant.tsv`
+  (padj < `deg.padj` and |log2FC| ≥ `deg.lfc`), `vst_counts.tsv`, and figures
+  (`pca.png`, `sample_distances.png`, `dispersion.png`, `ma_plot.png`, `volcano.png`,
+  `top_genes_heatmap.png`).
+- **Enrichment** (`enrichment/`) — GO (`deg.go_ont`) and, if `deg.run_kegg`, KEGG
+  over-representation on the up/down gene sets (`GO_<up|down>.tsv/.png`,
+  `KEGG_<up|down>.tsv/.png`, `enrichment_summary.tsv`). GENCODE `gene_id`s are
+  version-stripped and mapped to ENTREZ via `deg.orgdb` (`org.Hs.eg.db` by default).
+
+Config lives under the `deg:` section (`condition_col`, `reference`, `padj`, `lfc`,
+`top_genes`, `go_ont`, `run_kegg`, `orgdb`, `kegg_organism`). The stage runs in its own
+`workflow/envs/r-deg.yaml` (DESeq2 + clusterProfiler), created automatically by
+`--use-conda`. **KEGG needs network access at runtime** (it queries the KEGG API); it
+is skipped gracefully (recorded as 0 terms) if unavailable.
+
 ### Container Execution (Docker / Apptainer)
 
 One prebuilt image covers the whole workflow — you install nothing except Docker or
-Apptainer. The image ships Snakemake + the four pre-built per-rule conda envs (at
+Apptainer. The image ships Snakemake + the pre-built per-rule conda envs (at
 `/opt/wf-conda`) and its entrypoint is
 `snakemake --use-conda --conda-frontend mamba --conda-prefix /opt/wf-conda`, so
 anything after the image name goes straight to `snakemake`.

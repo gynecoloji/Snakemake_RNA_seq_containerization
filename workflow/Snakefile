@@ -8,6 +8,10 @@
 #   snakemake --use-conda --cores 20 qc_all          # advanced QC only
 #   snakemake --use-conda --cores 20 salmon_all      # Salmon only
 #
+# Differential expression is an OPT-IN stage (needs >=2 conditions in samples.csv);
+# it is not part of the default target:
+#   snakemake --use-conda --cores 8 deg_all          # DESeq2 DEG + GO/KEGG enrichment
+#
 # Reference genomes/annotation are provided by the user under ref/ (see README).
 
 from snakemake.utils import min_version
@@ -22,6 +26,7 @@ include: "rules/common.smk"
 include: "rules/rnaseq.smk"
 include: "rules/qc.smk"
 include: "rules/salmon.smk"
+include: "rules/deg.smk"
 
 
 rule all:
