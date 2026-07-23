@@ -77,22 +77,31 @@ rule hisat2_build:
     params:
         prefix=HISAT2_INDEX,
         splice_aware=HISAT2_SPLICE_AWARE,
+        align_chroms=" ".join(ALIGN_CHROMS),
     threads: config["threads"]["hisat2"]
     conda:
         "../envs/snakemake.yaml"
     shell:
         """
         mkdir -p $(dirname {params.prefix}) {LOGS}/hisat2_build
+        GENOME={input.genome}
+        # Optional: restrict the genome to the requested chromosomes before building.
+        if [ -n "{params.align_chroms}" ]; then
+            SUBSET={params.prefix}.align_subset.fa
+            samtools faidx {input.genome} {params.align_chroms} > "$SUBSET" 2> {log}
+            GENOME="$SUBSET"
+        fi
         if [ "{params.splice_aware}" = "True" ]; then
             SS={params.prefix}.ss.tsv
             EXON={params.prefix}.exon.tsv
-            hisat2_extract_splice_sites.py {input.gtf} > "$SS" 2> {log}
+            hisat2_extract_splice_sites.py {input.gtf} > "$SS" 2>> {log}
             hisat2_extract_exons.py {input.gtf} > "$EXON" 2>> {log}
-            hisat2-build -p {threads} --ss "$SS" --exon "$EXON" {input.genome} {params.prefix} >> {log} 2>&1
+            hisat2-build -p {threads} --ss "$SS" --exon "$EXON" "$GENOME" {params.prefix} >> {log} 2>&1
             rm -f "$SS" "$EXON"
         else
-            hisat2-build -p {threads} {input.genome} {params.prefix} >> {log} 2>&1
+            hisat2-build -p {threads} "$GENOME" {params.prefix} >> {log} 2>&1
         fi
+        if [ -n "{params.align_chroms}" ]; then rm -f "$SUBSET"; fi
         """
 
 
@@ -144,6 +153,7 @@ rule samtools_sort_filter_index:
         require=config["samtools_filter"]["require_flags"],
         exclude=config["samtools_filter"]["exclude_flags"],
         unique_tag=config["samtools_filter"]["unique_tag"],
+        keep_chroms=",".join(KEEP_CHROMS),
     conda:
         "../envs/snakemake.yaml"
     shell:
@@ -155,6 +165,10 @@ rule samtools_sort_filter_index:
                 | grep "{params.unique_tag}\\|^@" > $TMP
         else
             samtools view -@ {threads} -f {params.require} -F {params.exclude} -hS {input} > $TMP
+        fi
+        # Optional: keep only reads whose RNAME (chromosome) is in the configured set.
+        if [ -n "{params.keep_chroms}" ]; then
+            awk -v keep="{params.keep_chroms}" 'BEGIN{{n=split(keep,a,","); for(i=1;i<=n;i++) K[a[i]]=1}} /^@/{{print; next}} ($3 in K)' $TMP > $TMP.chr && mv $TMP.chr $TMP
         fi
         samtools view -@ {threads} -bhS $TMP | \
             samtools sort -@ {threads} -O bam -o {output.bam}

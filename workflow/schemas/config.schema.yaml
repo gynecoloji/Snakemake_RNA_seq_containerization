@@ -87,6 +87,10 @@ properties:
       require_flags: { type: string, description: "samtools view -f value." }
       exclude_flags: { type: string, description: "samtools view -F value." }
       unique_tag:    { type: string, description: Post-filter grep tag for unique reads; empty to skip. }
+      keep_chroms:
+        type: array
+        items: { type: string }
+        description: "Post-alignment read filter: keep only reads on these chromosomes (names match the reference; empty = keep all)."
     required: [require_flags, exclude_flags, unique_tag]
 
   featurecounts:
@@ -121,6 +125,10 @@ properties:
     properties:
       hisat2_splice_aware: { type: boolean, default: false, description: "Build the HISAT2 index with --ss/--exon from the GTF (needs ~160 GB RAM for human); false builds a plain genome index." }
       salmon_kmer:         { type: integer, minimum: 1, default: 31, description: "salmon index -k (minimum acceptable match length)." }
+      align_chroms:
+        type: array
+        items: { type: string }
+        description: "Restrict the genome to these chromosomes when building the HISAT2 index (empty = whole genome; only affects the auto-built index)."
 
 required:
   - samples_table
