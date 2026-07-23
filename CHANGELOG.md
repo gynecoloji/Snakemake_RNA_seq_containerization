@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.2.1...v1.3.0) (2026-07-23)
+
+
+### Added
+
+* build the RSeQC gene-model BED from the GTF on demand ([c638e6f](https://github.com/gynecoloji/snakemake_RNAseq/commit/c638e6fea5074631bafeaf09297fcffab4205c88))
+* GENCODE v36 reference support + on-demand RSeQC BED generation ([4eeaf38](https://github.com/gynecoloji/snakemake_RNAseq/commit/4eeaf38e04835093b0413e163c6cb52560ad8a17))
+
+
+### Fixed
+
+* point config at the GENCODE v36 GTF shipped in ref/ ([8da675d](https://github.com/gynecoloji/snakemake_RNAseq/commit/8da675dd4998eb16804739ede14b92e502fb7a9f))
+
+
+### Documentation
+
+* switch reference download links to GENCODE v36 to match the shipped GTF ([db92dd6](https://github.com/gynecoloji/snakemake_RNAseq/commit/db92dd6ce1b7a8581f0bdf4365ab0d7d509a056c))
+
 ## [1.2.1](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.2.0...v1.2.1) (2026-07-23)
 
 
