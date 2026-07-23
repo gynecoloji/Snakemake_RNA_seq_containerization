@@ -3,7 +3,7 @@
 #   apptainer build --fakeroot rnaseq-pipeline.sif apptainer.def   # from repo root
 #   apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 16
 #
-# Ships Snakemake plus the 4 pre-built per-rule conda envs at /opt/wf-conda.
+# Ships Snakemake plus the pre-built per-rule conda envs at /opt/wf-conda.
 # Genomes/FASTQs are NOT baked in: bind-mount your project at runtime.
 
 Bootstrap: docker

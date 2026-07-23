@@ -2,7 +2,7 @@
 
 The pipeline uses **one conda environment per rule** (`workflow/envs/*.yaml`) so
 tools with incompatible dependency stacks stay isolated. The image therefore
-ships **Snakemake + the 4 pre-built conda envs** (`snakemake`, `qualimap`,
+ships **Snakemake + the pre-built per-rule conda envs** (`snakemake`, `qualimap`,
 `RSeQC`, `salmon`) and runs Snakemake with `--use-conda`.
 
 Large reference genomes/indexes and FASTQs are **not** baked into the image — you
@@ -32,7 +32,7 @@ docker compose build
 # or:  docker build -t rnaseq-pipeline:latest .
 ```
 
-This pre-builds the 4 conda envs into the image (a few GB). Expect a long first
+This pre-builds the conda envs into the image (a few GB). Expect a long first
 build. For a reproducible image, pin the base tag in the `Dockerfile`
 (`FROM condaforge/miniforge3:<version>`).
 

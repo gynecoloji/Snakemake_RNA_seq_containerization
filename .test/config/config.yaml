@@ -121,3 +121,19 @@ salmon:
   # Library-type auto-detect ("A") or explicit ISR/ISF/etc.
   lib_type: "A"
   extra: "--validateMappings"
+
+# ---------------------------------------------------------------------------
+# Differential expression (opt-in stage: `snakemake deg_all`; R / DESeq2)
+# ---------------------------------------------------------------------------
+# DESeq2 over the featureCounts matrix, one contrast per non-reference level of the
+# samples.csv `condition_col` (vs `reference`), plus GO/KEGG over-representation.
+deg:
+  condition_col: "condition"   # column in config/samples.csv holding the group labels
+  reference: "control"         # reference (denominator) level of the contrast
+  padj: 0.05                   # adjusted-p significance threshold
+  lfc: 1.0                     # |log2FC| threshold for calling a gene significant
+  top_genes: 30                # genes shown in the top-gene heatmap
+  go_ont: "ALL"                # GO ontology: BP | MF | CC | ALL
+  run_kegg: true               # also run KEGG over-representation (needs network at runtime)
+  orgdb: "org.Hs.eg.db"        # Bioconductor annotation package (organism)
+  kegg_organism: "hsa"         # KEGG organism code (hsa = human)

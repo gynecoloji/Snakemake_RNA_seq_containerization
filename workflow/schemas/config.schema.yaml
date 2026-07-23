@@ -130,6 +130,20 @@ properties:
         items: { type: string }
         description: "Restrict the genome to these chromosomes when building the HISAT2 index (empty = whole genome; only affects the auto-built index)."
 
+  deg:
+    type: object
+    description: Options for the opt-in differential-expression stage (deg_all).
+    properties:
+      condition_col:  { type: string, default: condition, description: "samples.csv column holding the group labels." }
+      reference:      { type: string, default: control, description: "Reference (denominator) level of the contrast." }
+      padj:           { type: number, minimum: 0, maximum: 1, default: 0.05, description: "Adjusted-p significance threshold." }
+      lfc:            { type: number, minimum: 0, default: 1.0, description: "|log2FC| threshold for calling a gene significant." }
+      top_genes:      { type: integer, minimum: 1, default: 30, description: "Genes shown in the top-gene heatmap." }
+      go_ont:         { type: string, enum: [BP, MF, CC, ALL], default: ALL, description: "GO ontology for enrichment." }
+      run_kegg:       { type: boolean, default: true, description: "Also run KEGG over-representation (needs network at runtime)." }
+      orgdb:          { type: string, default: org.Hs.eg.db, description: "Bioconductor annotation package (organism)." }
+      kegg_organism:  { type: string, default: hsa, description: "KEGG organism code (hsa = human)." }
+
 required:
   - samples_table
   - paths

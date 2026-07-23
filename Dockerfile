@@ -1,7 +1,7 @@
 # RNA-seq Snakemake workflow container.
 #
 # The workflow runs one conda env PER RULE (workflow/envs/*.yaml). This image
-# ships Snakemake + the 4 pre-built per-rule conda envs and runs --use-conda.
+# ships Snakemake + the pre-built per-rule conda envs and runs --use-conda.
 # Large genomes/FASTQs are NOT baked in — mount your project at runtime
 # (see docker-compose.yml / run_pipeline.sh / DOCKER.md).
 
@@ -35,7 +35,7 @@ ENV PATH=/opt/conda/envs/driver/bin:$PATH
 
 WORKDIR /workflow
 
-# Pre-build the 4 per-rule envs BEFORE copying workflow code (cache-friendly).
+# Pre-build the per-rule envs BEFORE copying workflow code (cache-friendly).
 COPY workflow/envs/ ./workflow/envs/
 COPY create_envs.smk ./
 RUN snakemake -s create_envs.smk --use-conda --conda-create-envs-only \

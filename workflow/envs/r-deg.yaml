@@ -1,0 +1,15 @@
+name: r-deg
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base=4.3
+  - bioconductor-deseq2
+  - bioconductor-apeglm
+  - bioconductor-clusterprofiler
+  - bioconductor-enrichplot
+  - bioconductor-org.hs.eg.db
+  - r-ggplot2
+  - r-pheatmap
+  - r-rcolorbrewer

@@ -40,7 +40,33 @@ KEEP_CHROMS = config.get("samtools_filter", {}).get("keep_chroms", []) or []
 JAVA_MEM = config["qualimap"]["java_mem"]
 PROTOCOL = config["qualimap"]["protocol"]
 
+# ── Differential expression (opt-in stage; see rules/deg.smk) ────────────
+DEG_DIR = f"{RESULTS}/deg"
+DEG_CFG = config.get("deg", {})
+DEG_CONDITION_COL = DEG_CFG.get("condition_col", "condition")
+DEG_REFERENCE = str(DEG_CFG.get("reference", ""))
+DEG_PADJ = DEG_CFG.get("padj", 0.05)
+DEG_LFC = DEG_CFG.get("lfc", 1.0)
+DEG_TOP_GENES = DEG_CFG.get("top_genes", 30)
+DEG_ORGDB = DEG_CFG.get("orgdb", "org.Hs.eg.db")
+DEG_GO_ONT = DEG_CFG.get("go_ont", "ALL")
+DEG_RUN_KEGG = DEG_CFG.get("run_kegg", True)
+DEG_KEGG_ORG = DEG_CFG.get("kegg_organism", "hsa")
 
-# Constrain {sample} to the sheet so no stray files are matched.
+# One contrast per non-reference condition level (each vs DEG_REFERENCE).
+if DEG_CONDITION_COL in samples_df.columns:
+    _deg_levels = [
+        lvl
+        for lvl in dict.fromkeys(samples_df[DEG_CONDITION_COL].astype(str))
+        if lvl != DEG_REFERENCE
+    ]
+else:
+    _deg_levels = []
+DEG_CONTRAST_LEVEL = {f"{lvl}_vs_{DEG_REFERENCE}": lvl for lvl in _deg_levels}
+DEG_CONTRASTS = list(DEG_CONTRAST_LEVEL.keys())
+
+
+# Constrain wildcards to known values so no stray files are matched.
 wildcard_constraints:
     sample="|".join(re.escape(s) for s in SAMPLES) if SAMPLES else "a^",
+    contrast="|".join(re.escape(c) for c in DEG_CONTRASTS) if DEG_CONTRASTS else "a^",
