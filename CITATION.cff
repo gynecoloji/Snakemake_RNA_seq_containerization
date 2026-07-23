@@ -26,3 +26,7 @@ keywords:
 # `version` + `date-released` are bumped automatically by release-please.
 version: "1.2.0" # x-release-please-version
 date-released: "2026-07-23" # x-release-please-date
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.21502827"
+    description: "Concept DOI (resolves to the latest version)"

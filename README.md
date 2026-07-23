@@ -1,12 +1,11 @@
 # RNA-seq Analysis Pipeline
 
 [![CI](https://github.com/gynecoloji/snakemake_RNAseq/actions/workflows/ci.yml/badge.svg)](https://github.com/gynecoloji/snakemake_RNAseq/actions/workflows/ci.yml)
+[![DOI](https://zenodo.org/badge/1126053465.svg)](https://doi.org/10.5281/zenodo.21502827)
 [![Release](https://img.shields.io/github/v/release/gynecoloji/snakemake_RNAseq?label=release)](https://github.com/gynecoloji/snakemake_RNAseq/releases)
 [![Snakemake](https://img.shields.io/badge/snakemake-%E2%89%A58.0-brightgreen)](https://snakemake.github.io)
 [![Docker Hub](https://img.shields.io/docker/pulls/gynecoloji/rnaseq_pipeline?logo=docker&label=docker%20pulls)](https://hub.docker.com/r/gynecoloji/rnaseq_pipeline)
 [![License: MIT](https://img.shields.io/github/license/gynecoloji/snakemake_RNAseq)](LICENSE)
-<!-- After minting a Zenodo DOI, uncomment:
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) -->
 
 A comprehensive Snakemake workflow for processing and analyzing paired-end RNA-seq
 data from raw reads to a gene-level count matrix and transcript-level abundances,
@@ -221,6 +220,9 @@ references:
 Common adjustments (see `config/config.yaml` for the full annotated file):
 - **Strandedness** — `featurecounts.strandedness` (0 unstranded / 1 forward / 2 reverse)
   and `qualimap.protocol`.
+- **Restrict chromosomes** — `index.align_chroms` subsets the genome when building the
+  HISAT2 index (reads then align only to those chromosomes); `samtools_filter.keep_chroms`
+  keeps, after alignment, only reads on the listed chromosomes. Empty = no filtering.
 - **Per-rule threads** — the `threads:` section.
 - **Low RAM** — lower `threads.*` and `qualimap.java_mem`.
 
