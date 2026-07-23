@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.1.0...v1.1.1) (2026-07-23)
+
+
+### Documentation
+
+* align README with the ATAC-seq template; tidy changelog, badges, and images ([e58f762](https://github.com/gynecoloji/snakemake_RNAseq/commit/e58f762cd8a7c7ef4e999bb1303682ee3f8287f3))
+* apply the ATAC-seq-style README rewrite ([ea8f718](https://github.com/gynecoloji/snakemake_RNAseq/commit/ea8f7181b998af14437dbe469964c7830b4967d1))
+* move diagram.png into images/ and drop rulegraph.svg ([00819bb](https://github.com/gynecoloji/snakemake_RNAseq/commit/00819bb9a97edc1e1a19f53d4ecfb7ba4ef31ec1))
+* remove duplicate pipeline figure from README ([ddcb985](https://github.com/gynecoloji/snakemake_RNAseq/commit/ddcb985a0af2395d34fc6ad52ce275cb77e02272))
+* rewrite README in the ATAC-seq template style; drop redundant guides ([aa8c95e](https://github.com/gynecoloji/snakemake_RNAseq/commit/aa8c95ef4725a6a361a4cb04588c334dfc901602))
+* tidy changelog and refresh README badges ([a30f19c](https://github.com/gynecoloji/snakemake_RNAseq/commit/a30f19c8e0e07d9ade8d2d79be9ee8bc04672978))
+
 ## [1.1.0](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.0.0...v1.1.0) (2026-07-23)
 
 
