@@ -649,10 +649,6 @@ This pipeline integrates tools developed by the bioinformatics community. Specia
 
 ![Workflow](diagram.png)
 
-The Snakemake rule graph (auto-generated from the `.test/` fixture):
-
-![Rule graph](images/rulegraph.svg)
-
 - **Tools Integrated:** 10+
 - **QC Metrics:** 20+
 - **Containerization:** Docker + Singularity
