@@ -34,6 +34,8 @@ GENOME_FASTA = config["references"].get("genome_fasta", "ref/genome.fa")
 TRANSCRIPTOME_FASTA = config["references"].get("transcriptome_fasta", "ref/transcripts.fa")
 HISAT2_SPLICE_AWARE = config.get("index", {}).get("hisat2_splice_aware", False)
 SALMON_KMER = config.get("index", {}).get("salmon_kmer", 31)
+ALIGN_CHROMS = config.get("index", {}).get("align_chroms", []) or []
+KEEP_CHROMS = config.get("samtools_filter", {}).get("keep_chroms", []) or []
 
 JAVA_MEM = config["qualimap"]["java_mem"]
 PROTOCOL = config["qualimap"]["protocol"]

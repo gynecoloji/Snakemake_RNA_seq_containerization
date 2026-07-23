@@ -60,6 +60,10 @@ index:
   # GTF (better on annotated junctions, but ~160 GB RAM for a human genome).
   hisat2_splice_aware: false
   salmon_kmer: 31              # salmon index -k (min match length; 31 suits >=75 bp reads)
+  # Restrict the genome to these chromosomes when BUILDING the HISAT2 index (reads then
+  # align only to them). Names MUST match your genome FASTA (ENSEMBL: 1 2 ... X Y MT;
+  # UCSC: chr1 ...). Empty [] = build the whole genome. Only affects the auto-built index.
+  align_chroms: []
 
 # ---------------------------------------------------------------------------
 # Per-rule thread counts
@@ -95,6 +99,9 @@ samtools_filter:
   exclude_flags: "0x100"
   # Post-filter grep to keep only uniquely mapped reads (NH:i:1). Leave empty to skip.
   unique_tag: "NH:i:1"
+  # Optional: after alignment, keep only reads on these chromosomes (names must match the
+  # BAM/reference; ENSEMBL 1 2 ... X Y MT, UCSC chr1 ...). Empty [] = keep all chromosomes.
+  keep_chroms: []
 
 featurecounts:
   # -t feature type, -g attribute, -s strandedness (0 unstranded, 1 forward, 2 reverse)

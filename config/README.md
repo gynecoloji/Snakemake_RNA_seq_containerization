@@ -41,3 +41,15 @@ genome FASTA (`references.genome_fasta`) and a transcriptome FASTA
 instead and the build is skipped (the source FASTAs are then never read).
 Index-build options live under the `index:` section (`hisat2_splice_aware`,
 `salmon_kmer`).
+
+## Chromosome selection
+
+Two optional filters restrict which chromosomes are used, both off by default (an
+empty list means no filtering):
+
+- `index.align_chroms` — restrict the genome to these chromosomes when **building** the
+  HISAT2 index, so reads only ever align to them (only affects the auto-built index).
+- `samtools_filter.keep_chroms` — **after** alignment, keep only reads whose chromosome
+  is in this list (works with any index — bring-your-own or auto-built).
+
+Chromosome names must match your reference (ENSEMBL: `1 2 … X Y MT`; UCSC: `chr1 …`).
