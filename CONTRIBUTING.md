@@ -8,7 +8,7 @@ By participating, you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md
 
 ## Reporting issues
 
-Open a [GitHub issue](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/issues)
+Open a [GitHub issue](https://github.com/gynecoloji/snakemake_RNAseq/issues)
 with:
 
 - what you ran (the exact `snakemake` command / target),
@@ -18,8 +18,8 @@ with:
 ## Development setup
 
 ```bash
-git clone https://github.com/gynecoloji/Snakemake_RNA_seq_containerization.git
-cd Snakemake_RNA_seq_containerization
+git clone https://github.com/gynecoloji/snakemake_RNAseq.git
+cd snakemake_RNAseq
 
 # Driver environment (per-rule tool envs are created on first --use-conda run)
 mamba create -n rnaseq -c conda-forge -c bioconda snakemake pandas pytest

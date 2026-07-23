@@ -52,5 +52,5 @@ deployed with `snakedeploy deploy-workflow` or imported via Snakemake's
   longer exist. Use `snakemake --use-conda -s workflow/Snakefile` with an optional
   `rna_all` / `qc_all` / `salmon_all` target. Configuration moved to `config/`.
 
-[Unreleased]: https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/releases/tag/v1.0.0
+[Unreleased]: https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/gynecoloji/snakemake_RNAseq/releases/tag/v1.0.0

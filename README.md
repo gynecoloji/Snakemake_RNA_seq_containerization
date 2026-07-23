@@ -1,12 +1,12 @@
 # Advanced RNA-seq Analysis Pipeline
 
-[![CI](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/actions/workflows/ci.yml/badge.svg)](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/actions/workflows/ci.yml)
+[![CI](https://github.com/gynecoloji/snakemake_RNAseq/actions/workflows/ci.yml/badge.svg)](https://github.com/gynecoloji/snakemake_RNAseq/actions/workflows/ci.yml)
 <!-- After minting a Zenodo DOI, uncomment and fill in the badge below:
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) -->
 ![Docker Pulls](https://img.shields.io/docker/pulls/gynecoloji/rnaseq_pipeline)
 ![Docker Image Size](https://img.shields.io/docker/image-size/gynecoloji/rnaseq_pipeline)
-![GitHub Stars](https://img.shields.io/github/stars/gynecoloji/Snakemake_RNA_seq_containerization?style=social)
-![License](https://img.shields.io/github/license/gynecoloji/Snakemake_RNA_seq_containerization)
+![GitHub Stars](https://img.shields.io/github/stars/gynecoloji/snakemake_RNAseq?style=social)
+![License](https://img.shields.io/github/license/gynecoloji/snakemake_RNAseq)
 
 **A production-ready, containerized Snakemake workflow for comprehensive RNA-seq analysis**
 
@@ -17,8 +17,8 @@ Integrates alignment-based quantification (HISAT2), alignment-free quantificatio
 ## 🚀 Quick Start
 ```bash
 # Clone the repository
-git clone https://github.com/gynecoloji/Snakemake_RNA_seq_containerization.git
-cd Snakemake_RNA_seq_containerization
+git clone https://github.com/gynecoloji/snakemake_RNAseq.git
+cd snakemake_RNAseq
 
 # Prepare your data
 mkdir -p data ref
@@ -115,8 +115,8 @@ Raw FASTQ files
 **Requirements:** Docker ≥ 20.10, Docker Compose ≥ 1.29
 ```bash
 # Clone repository
-git clone https://github.com/gynecoloji/Snakemake_RNA_seq_containerization.git
-cd Snakemake_RNA_seq_containerization
+git clone https://github.com/gynecoloji/snakemake_RNAseq.git
+cd snakemake_RNAseq
 
 # Build image (one-time setup; pre-bakes the conda envs)
 docker compose build
@@ -167,8 +167,8 @@ singularity build rnaseq_pipeline.sif docker-archive://rnaseq_pipeline.tar.gz
 **Requirements:** Conda/Mamba, 64GB+ RAM
 ```bash
 # Clone repository
-git clone https://github.com/gynecoloji/Snakemake_RNA_seq_containerization.git
-cd Snakemake_RNA_seq_containerization
+git clone https://github.com/gynecoloji/snakemake_RNAseq.git
+cd snakemake_RNAseq
 
 # Driver env (Snakemake + pandas). The per-rule tool envs under workflow/envs/
 # are created automatically on the first `--use-conda` run.
@@ -305,7 +305,7 @@ without cloning it by hand:
 ```bash
 pip install snakedeploy
 # In an empty target project directory:
-snakedeploy deploy-workflow https://github.com/gynecoloji/Snakemake_RNA_seq_containerization . --tag main
+snakedeploy deploy-workflow https://github.com/gynecoloji/snakemake_RNAseq . --tag main
 ```
 
 This writes a `workflow/Snakefile` that `module`-imports this workflow, plus a
@@ -315,7 +315,7 @@ This writes a `workflow/Snakefile` that `module`-imports this workflow, plus a
 ```python
 module rnaseq:
     snakefile:
-        github("gynecoloji/Snakemake_RNA_seq_containerization", path="workflow/Snakefile", tag="main")
+        github("gynecoloji/snakemake_RNAseq", path="workflow/Snakefile", tag="main")
     config:
         config
 
@@ -573,7 +573,7 @@ If you use this pipeline in your research, please cite:
   author = {gynecoloji},
   title = {Advanced RNA-seq Analysis Pipeline},
   year = {2025},
-  url = {https://github.com/gynecoloji/Snakemake_RNA_seq_containerization},
+  url = {https://github.com/gynecoloji/snakemake_RNAseq},
   version = {1.0}
 }
 ```
@@ -611,8 +611,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 **Author:** gynecoloji
 
 **Get Help:**
-- 🐛 **Bug Reports:** [Open an issue](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/issues)
-- 💬 **Questions:** [Start a discussion](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/discussions)
+- 🐛 **Bug Reports:** [Open an issue](https://github.com/gynecoloji/snakemake_RNAseq/issues)
+- 💬 **Questions:** [Start a discussion](https://github.com/gynecoloji/snakemake_RNAseq/discussions)
 - 📧 **Email:** [Contact via GitHub](https://github.com/gynecoloji)
 
 **Community:**
@@ -653,11 +653,11 @@ The Snakemake rule graph (auto-generated from the `.test/` fixture):
 
 | Resource | Link |
 |----------|------|
-| 🏠 **Home** | [GitHub Repository](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization) |
+| 🏠 **Home** | [GitHub Repository](https://github.com/gynecoloji/snakemake_RNAseq) |
 | 🐳 **Docker Hub** | [gynecoloji/rnaseq_pipeline](https://hub.docker.com/r/gynecoloji/rnaseq_pipeline) |
 | 📖 **Documentation** | [Guides & Tutorials](#documentation) |
-| 🐛 **Issues** | [Report Problems](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/issues) |
-| ⭐ **Star** | [Star this repo](https://github.com/gynecoloji/Snakemake_RNA_seq_containerization) |
+| 🐛 **Issues** | [Report Problems](https://github.com/gynecoloji/snakemake_RNAseq/issues) |
+| ⭐ **Star** | [Star this repo](https://github.com/gynecoloji/snakemake_RNAseq) |
 
 ---
 

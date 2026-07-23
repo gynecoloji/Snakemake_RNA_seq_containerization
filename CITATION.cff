@@ -12,8 +12,8 @@ authors:
   - given-names: "Ji"
     family-names: "Wang"
     orcid: "https://orcid.org/0000-0003-3443-5857"
-repository-code: "https://github.com/gynecoloji/Snakemake_RNA_seq_containerization"
-url: "https://github.com/gynecoloji/Snakemake_RNA_seq_containerization"
+repository-code: "https://github.com/gynecoloji/snakemake_RNAseq"
+url: "https://github.com/gynecoloji/snakemake_RNAseq"
 license: MIT
 keywords:
   - RNA-seq

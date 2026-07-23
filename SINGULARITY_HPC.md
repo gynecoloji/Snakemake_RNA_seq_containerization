@@ -166,7 +166,7 @@ ls results/samtools/*.bam | wc -l   # progress
 ## 🆘 Getting help
 
 - Apptainer docs: https://apptainer.org/docs/ · Singularity CE: https://sylabs.io/docs/
-- Pipeline issues: https://github.com/gynecoloji/Snakemake_RNA_seq_containerization/issues
+- Pipeline issues: https://github.com/gynecoloji/snakemake_RNAseq/issues
   (include the `snakemake` command, the relevant `logs/`, and your Snakemake version)
 
 ---
