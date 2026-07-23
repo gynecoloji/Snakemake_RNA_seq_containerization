@@ -34,7 +34,7 @@ conventions, so the workflow can be deployed into another project with
 
 ## Workflow Diagram
 
-![RNA-seq workflow](diagram.png)
+![RNA-seq workflow](images/diagram.png)
 
 ## Features
 

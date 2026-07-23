@@ -1,5 +1,4 @@
 # Keep generated artifacts out of GitHub's language bar.
-images/rulegraph.svg    linguist-generated
 .test/**                linguist-generated
 
 # Normalize text to LF; scripts/Snakemake files MUST stay LF for Linux containers.
