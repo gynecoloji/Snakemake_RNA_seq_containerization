@@ -4,7 +4,7 @@
 [![DOI](https://zenodo.org/badge/1126053465.svg)](https://doi.org/10.5281/zenodo.21502827)
 [![Release](https://img.shields.io/github/v/release/gynecoloji/snakemake_RNAseq?label=release)](https://github.com/gynecoloji/snakemake_RNAseq/releases)
 [![Snakemake](https://img.shields.io/badge/snakemake-%E2%89%A58.0-brightgreen)](https://snakemake.github.io)
-[![Docker Hub](https://img.shields.io/docker/pulls/gynecoloji/rnaseq_pipeline?logo=docker&label=docker%20pulls)](https://hub.docker.com/r/gynecoloji/rnaseq_pipeline)
+[![Docker Hub](https://img.shields.io/docker/pulls/gynecoloji/rnaseq-pipeline?logo=docker&label=docker%20pulls)](https://hub.docker.com/r/gynecoloji/rnaseq-pipeline)
 [![License: MIT](https://img.shields.io/github/license/gynecoloji/snakemake_RNAseq)](LICENSE)
 
 A comprehensive Snakemake workflow for processing and analyzing paired-end RNA-seq
@@ -36,8 +36,6 @@ conventions, so the workflow can be deployed into another project with
 `snakedeploy deploy-workflow` (see [Deploying with snakedeploy](#deploying-with-snakedeploy)).
 
 ## Workflow Diagram
-
-![RNA-seq workflow](images/diagram.png)
 
 The Snakemake rule graph, rendered as a "tube map" with
 [snakevision](https://github.com/OpenOmics/snakevision) (includes the opt-in `deg_all`
@@ -360,11 +358,13 @@ Apptainer. The image ships Snakemake + the pre-built per-rule conda envs (at
 anything after the image name goes straight to `snakemake`.
 
 ```bash
-# Docker
-docker pull gynecoloji/rnaseq_pipeline:latest
+# Docker — the Docker Hub repo hosts a SIF (ORAS artifact), not a runnable Docker
+# image, so build the Docker image locally from the Dockerfile:
+docker compose build                          # → rnaseq-pipeline:latest
 
-# Apptainer / Singularity (HPC) — downloads + builds ./rnaseq-pipeline.sif from the image
-apptainer pull rnaseq-pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
+# Apptainer / Singularity (HPC) — pull the published SIF (ORAS) directly, or build it
+# locally (apptainer build --fakeroot rnaseq-pipeline.sif apptainer.def):
+apptainer pull rnaseq-pipeline.sif oras://docker.io/gynecoloji/rnaseq-pipeline:latest
 ```
 
 Genomes/FASTQs are **not** baked into the image; you mount your project directory at
@@ -375,7 +375,7 @@ run time (see [`DOCKER.md`](DOCKER.md) for the exact `ref/` and `data/` files ex
 
 ```bash
 docker run --rm -v "$(pwd)":/workflow -e HOME=/tmp --user "$(id -u):$(id -g)" \
-    gynecoloji/rnaseq_pipeline:latest -s workflow/Snakefile --cores 16
+    rnaseq-pipeline:latest -s workflow/Snakefile --cores 16
 # or just one stage: append the rna_all / qc_all / salmon_all target
 ```
 
@@ -391,8 +391,8 @@ current directory, and runs as you (no `--user` needed). Load the module first i
 cluster uses one (`module load apptainer`):
 
 ```bash
-# One-time: download + build ./rnaseq-pipeline.sif from the Docker Hub image
-apptainer pull rnaseq-pipeline.sif docker://gynecoloji/rnaseq_pipeline:latest
+# One-time: pull the published SIF (ORAS artifact) from Docker Hub
+apptainer pull rnaseq-pipeline.sif oras://docker.io/gynecoloji/rnaseq-pipeline:latest
 
 # Run from your project directory — the entrypoint IS snakemake, so just pass its args:
 apptainer run rnaseq-pipeline.sif -s workflow/Snakefile --cores 16            # everything
