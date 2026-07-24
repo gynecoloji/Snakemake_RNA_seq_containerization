@@ -20,6 +20,11 @@ From: condaforge/miniforge3:latest
     export DEBIAN_FRONTEND=noninteractive
     export WF_CONDA_PREFIX=/opt/wf-conda
 
+    # When built rootless (user not in /etc/subuid, so no real --fakeroot), apt's
+    # privilege-dropping sandbox fails ("setgroups/seteuid: Operation not permitted").
+    # Disable it so apt runs as the namespace root. Harmless under a real-root build.
+    printf 'APT::Sandbox::User "root";\n' > /etc/apt/apt.conf.d/01-no-sandbox
+
     apt-get update
     apt-get install -y --no-install-recommends git procps ca-certificates
     rm -rf /var/lib/apt/lists/*

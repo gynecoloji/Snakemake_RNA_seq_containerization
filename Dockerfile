@@ -15,7 +15,11 @@ ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     WF_CONDA_PREFIX=/opt/wf-conda
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Disable apt's privilege-dropping sandbox so the image also builds under a rootless
+# engine (e.g. podman without /etc/subuid), mirroring apptainer.def. No-op under root
+# docker (apt would run as root anyway).
+RUN printf 'APT::Sandbox::User "root";\n' > /etc/apt/apt.conf.d/01-no-sandbox && \
+    apt-get update && apt-get install -y --no-install-recommends \
         git procps ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
