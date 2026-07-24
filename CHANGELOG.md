@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.4.0...v1.4.1) (2026-07-24)
+
+
+### Fixed
+
+* make the Apptainer build work rootless (no /etc/subuid) ([d6ae52e](https://github.com/gynecoloji/snakemake_RNAseq/commit/d6ae52ebf9b206c82f4f21e8da9e597458fb1e04))
+* mirror the rootless-apt sandbox fix into the Dockerfile ([e6e10ed](https://github.com/gynecoloji/snakemake_RNAseq/commit/e6e10edc67a2f683f3c49df6dd0f080e6d824023))
+
 ## [1.4.0](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.3.0...v1.4.0) (2026-07-23)
 
 
