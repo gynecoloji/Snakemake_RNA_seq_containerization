@@ -48,6 +48,8 @@ differential-expression stage):
 Regenerate it after changing the rules:
 
 ```bash
+pip install snakevision   # one-off — not one of the pipeline's conda envs
+
 # Name the targets BEFORE --rulegraph (the flag takes an optional value and would
 # otherwise swallow the first target). deg_all is added explicitly since it is not
 # part of the default target.
