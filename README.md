@@ -39,6 +39,24 @@ conventions, so the workflow can be deployed into another project with
 
 ![RNA-seq workflow](images/diagram.png)
 
+The Snakemake rule graph, rendered as a "tube map" with
+[snakevision](https://github.com/OpenOmics/snakevision) (includes the opt-in `deg_all`
+differential-expression stage):
+
+![RNA-seq rule graph](images/rulegraph.svg)
+
+Regenerate it after changing the rules:
+
+```bash
+pip install snakevision   # one-off — not one of the pipeline's conda envs
+
+# Name the targets BEFORE --rulegraph (the flag takes an optional value and would
+# otherwise swallow the first target). deg_all is added explicitly since it is not
+# part of the default target.
+snakemake -s workflow/Snakefile -c 1 -d .test all deg_all --forceall --rulegraph > rulegraph.dot
+snakevision -s all rna_all qc_all salmon_all deg_all -o images/rulegraph.svg rulegraph.dot
+```
+
 ## Features
 
 - **Complete end-to-end processing** of paired-end RNA-seq data
