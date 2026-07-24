@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.4.1...v1.4.2) (2026-07-24)
+
+
+### Documentation
+
+* add snakevision rule-graph (tube map) for the current workflow ([17dfd79](https://github.com/gynecoloji/snakemake_RNAseq/commit/17dfd79dc27ea928f7d77ed6d5708df01aa08a9a))
+* add snakevision rule-graph (tube map) for the current workflow ([30280ce](https://github.com/gynecoloji/snakemake_RNAseq/commit/30280cef0c8ea875668a5ca1e547214e9d2b5b29))
+* fix Docker Hub repo name + drop conceptual diagram from README ([803b64f](https://github.com/gynecoloji/snakemake_RNAseq/commit/803b64fb2362e94be5f1c11337f55aaeffa9f8a0))
+* note the one-off snakevision install in the rule-graph regen snippet ([53074d1](https://github.com/gynecoloji/snakemake_RNAseq/commit/53074d1220471107c768c3112f734a0cf03083b4))
+* point Docker Hub refs at the real rnaseq-pipeline repo; drop diagram.png ([8f0bb65](https://github.com/gynecoloji/snakemake_RNAseq/commit/8f0bb658cd5266cae44daa25f50ac57cb7fdb018))
+
 ## [1.4.1](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.4.0...v1.4.1) (2026-07-24)
 
 
