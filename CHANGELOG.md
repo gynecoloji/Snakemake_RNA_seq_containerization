@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.6.0...v1.6.1) (2026-07-26)
+
+
+### Documentation
+
+* regenerate snakevision rule graph for the transcript stage ([f0a8e75](https://github.com/gynecoloji/snakemake_RNAseq/commit/f0a8e754ca5702366187c321540f41104ec67707))
+* regenerate snakevision rule graph for the transcript stage ([eb1d13b](https://github.com/gynecoloji/snakemake_RNAseq/commit/eb1d13ba33a20afabc1f17c592c8e9b30b7f819f))
+
 ## [1.6.0](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.5.0...v1.6.0) (2026-07-26)
 
 
