@@ -1,0 +1,17 @@
+name: r-transcript
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # edgeR >=4.0 provides catchSalmon and needs R >=4.4 / Bioconductor >=3.19
+  # (the gene-level r-deg env stays on r-base=4.3; this one must be newer).
+  - r-base=4.4
+  - bioconductor-edger>=4.0          # catchSalmon (T2) — NOT present in edgeR 3.x
+  - bioconductor-limma
+  - bioconductor-tximport            # T4 DTU import
+  - bioconductor-drimseq             # T4 DTU filter
+  - bioconductor-dexseq              # T4 DTU test
+  - bioconductor-fishpond            # T5 swish (optional 2nd DTE opinion)
+  - r-ggplot2
+  - r-pheatmap

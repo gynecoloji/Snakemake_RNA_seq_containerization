@@ -4,7 +4,7 @@
 #   snakemake -s create_envs.smk --use-conda --conda-create-envs-only \
 #       --conda-frontend mamba --conda-prefix /opt/wf-conda --cores 1
 
-ENVS = ["snakemake", "qualimap", "RSeQC", "salmon", "ucsc", "r-deg"]
+ENVS = ["snakemake", "qualimap", "RSeQC", "salmon", "ucsc", "r-deg", "r-transcript"]
 
 
 rule all:

@@ -142,6 +142,32 @@ deg:
 # per-transcript estimated-count (NumReads) matrix, using the SAME contrast as `deg`
 # above (condition_col / reference / padj / lfc / top_genes are reused). Emits a
 # transcript count matrix, a TPM matrix, DE tables, and plots per quant source.
+# Transcript-level differential expression. Two implementations:
+#   * transcript_de.smk (edgeR catchSalmon, DTE) — the correct, reported analysis.
+#     Opt-in: txq_all (bootstrap quant) -> dte_all (DTE). Needs the r-transcript
+#     env, so rebuild the container after adding it. >=3 replicates/group.
+#   * det.smk (legacy NumReads -> DESeq2) — kept for continuity, writes to
+#     results/transcript_de_naive/; does not control transcript-level FDR.
 transcript_de:
-  quant_sources: [salmon, salmon_decoy]  # which Salmon quants to analyze (plain / decoy-aware)
-  min_count: 10                          # drop transcripts with total estimated count below this
+  # ---- bootstrap quantification (T1: salmon_boot_quant) ----
+  num_bootstraps: 100
+  inference: "bootstrap"          # bootstrap (dte_all, default) | gibbs (swish)
+  # No `libtype` key: Salmon inherits config["salmon"]["lib_type"] ("A").
+
+  # ---- design ----
+  covariates: []                  # extra samples.csv columns, e.g. ["batch"]
+
+  # ---- DTE (T2: dte_catchsalmon) — the primary analysis ----
+  dte_lfc: 1.0                    # glmTreat |log2FC| threshold; 0 = plain QL test
+  emit_gene_simes: true           # gene-level Simes roll-up alongside transcript FDR
+
+  # ---- DTU interpretation layer (T4, follow-up; env already provisioned) ----
+  min_feature_expr: 10
+  min_feature_prop: 0.10          # the filter that does most of the work
+  min_gene_expr: 10
+  dif_cutoff: 0.10                # |dIF| gate for the DTU annotation
+  run_swish: null                 # null = auto-enable when min group n >= 5
+
+  # ---- legacy det.smk (NumReads -> DESeq2; results/transcript_de_naive/) ----
+  quant_sources: ["salmon_decoy"]  # decoy-aware only (non-decoy is strictly worse)
+  min_count: 10

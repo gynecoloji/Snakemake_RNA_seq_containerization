@@ -6,7 +6,10 @@
 
 import os
 
-DET_DIR = f"{RESULTS}/transcript_de"
+# NOTE: superseded by transcript_de.smk (edgeR catchSalmon, DTE). Kept for continuity;
+# its NumReads->DESeq2 test does not control transcript-level FDR (RTA overdispersion),
+# so its output is written under transcript_de_naive/ and should not be the reported result.
+DET_DIR = f"{RESULTS}/transcript_de_naive"
 TX_DE_SCRIPT = os.path.join(workflow.basedir, "scripts", "salmon_tx_de.R")
 
 # quant-source label -> salmon output root (produced by rules salmon_quant / salmon_decoy_quant)
