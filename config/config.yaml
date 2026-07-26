@@ -137,3 +137,11 @@ deg:
   run_kegg: true               # also run KEGG over-representation (needs network at runtime)
   orgdb: "org.Hs.eg.db"        # Bioconductor annotation package (organism)
   kegg_organism: "hsa"         # KEGG organism code (hsa = human)
+
+# Transcript-level differential expression (opt-in: det_all). DESeq2 over the Salmon
+# per-transcript estimated-count (NumReads) matrix, using the SAME contrast as `deg`
+# above (condition_col / reference / padj / lfc / top_genes are reused). Emits a
+# transcript count matrix, a TPM matrix, DE tables, and plots per quant source.
+transcript_de:
+  quant_sources: [salmon, salmon_decoy]  # which Salmon quants to analyze (plain / decoy-aware)
+  min_count: 10                          # drop transcripts with total estimated count below this
