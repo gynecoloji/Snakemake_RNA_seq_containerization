@@ -9,6 +9,8 @@ dependencies:
   - r-base=4.4
   - bioconductor-edger>=4.0          # catchSalmon (T2) — NOT present in edgeR 3.x
   - bioconductor-limma
+  - r-readr                          # catchSalmon reads quant.sf via readr::read_tsv
+  - r-jsonlite                       # catchSalmon reads meta_info.json via jsonlite
   - bioconductor-tximport            # T4 DTU import
   - bioconductor-drimseq             # T4 DTU filter
   - bioconductor-dexseq              # T4 DTU test
