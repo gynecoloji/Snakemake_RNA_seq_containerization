@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.5.0...v1.6.0) (2026-07-26)
+
+
+### Added
+
+* **dte:** add DTU interpretation layer + annotated report (T4/T8) ([9659a03](https://github.com/gynecoloji/snakemake_RNAseq/commit/9659a03aa923396ae2a9f4517dc3ae66c40389bf))
+* transcript-level DTE via edgeR catchSalmon (dte_all) ([76f2032](https://github.com/gynecoloji/snakemake_RNAseq/commit/76f2032c8c913963f7c5492cba480c1b34e25c4f))
+
+
+### Fixed
+
+* **dte:** add readr + jsonlite to r-transcript env (catchSalmon deps) ([2bee4e2](https://github.com/gynecoloji/snakemake_RNAseq/commit/2bee4e23e07590526872e74d843f6b8cef5f106b))
+
 ## [1.5.0](https://github.com/gynecoloji/snakemake_RNAseq/compare/v1.4.2...v1.5.0) (2026-07-26)
 
 
