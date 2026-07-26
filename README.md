@@ -152,6 +152,22 @@ Why not plain DESeq2 on `NumReads`? Transcript counts carry RTA overdispersion t
 FDR is not controlled. The older `det_all` target (naive `NumReads` → DESeq2,
 `results/transcript_de_naive/`) is kept for continuity but should not be the reported result.
 
+**Interpretation + report (`tx_report_all`, opt-in).** A DE transcript can be DE for two
+reasons — its whole gene moved (*gene-driven*) or *it* shifted relative to its siblings
+(*isoform-specific*) — and the distinction usually carries the biology. The report joins
+each DTE hit to its gene-level DESeq2 result and a **DTU** flag (DRIMSeq → DEXSeq,
+`dtu_dexseq_all`) and labels the class:
+
+```bash
+snakemake --use-conda --cores 8 dtu_dexseq_all   # DTU (DEXSeq) interpretation layer
+snakemake --use-conda --cores 4 tx_report_all    # ★ annotated report (pulls DTE + gene-DGE + DTU)
+```
+
+`tx_report_all` builds the whole chain and writes `dte_annotated.tsv` (per transcript:
+DTE `logFC`/`FDR`/`Overdispersion` × gene-DGE × DTU `dIF`, with an `isoform_specific` /
+`gene_driven` / `gene_and_switch` class) plus `class_summary.tsv` under
+`results/transcript/report/{contrast}/`.
+
 ## Requirements
 
 - [Snakemake](https://snakemake.readthedocs.io/) ≥8.0

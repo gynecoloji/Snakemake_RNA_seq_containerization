@@ -132,3 +132,70 @@ rule dte_catchsalmon:
         "../envs/r-transcript.yaml"
     script:
         "../scripts/tx_dte_edger.R"
+
+
+# ---------------------------------------------------------------------------
+# T4 · DTU interpretation layer (DRIMSeq filter -> DEXSeq). Annotates DTE hits
+# (gene-driven vs isoform-specific); NOT the primary deliverable.
+# ---------------------------------------------------------------------------
+rule dtu_dexseq_all:
+    input:
+        expand(f"{TX_DIR}/dtu/{{contrast}}/dtu_gene.tsv", contrast=DEG_CONTRASTS),
+
+
+rule dtu_dexseq:
+    input:
+        quants=expand(f"{TXQ_DIR}/{{sample}}_quant/quant.sf", sample=SAMPLES),
+        samples=config["samples_table"],
+        tx2gene=TX2GENE,
+    output:
+        gene=f"{TX_DIR}/dtu/{{contrast}}/dtu_gene.tsv",
+        fractions=f"{TX_DIR}/dtu/{{contrast}}/isoform_fractions.tsv",
+    params:
+        quant_root=TXQ_DIR,
+        condition_col=DEG_CONDITION_COL,
+        level=lambda w: DEG_CONTRAST_LEVEL[w.contrast],
+        reference=DEG_REFERENCE,
+        covariates=TX_COVARS,
+        min_feature_expr=TXCFG.get("min_feature_expr", 10),
+        min_feature_prop=TXCFG.get("min_feature_prop", 0.10),
+        min_gene_expr=TXCFG.get("min_gene_expr", 10),
+        outdir=lambda w: f"{TX_DIR}/dtu/{w.contrast}",
+    threads: 4
+    log:
+        f"{LOGS}/transcript/dtu_{{contrast}}.log",
+    conda:
+        "../envs/r-transcript.yaml"
+    script:
+        "../scripts/tx_dtu_dexseq.R"
+
+
+# ---------------------------------------------------------------------------
+# T8 · Annotated DTE report — the final output. Joins DTE x gene-DGE x DTU and
+# labels each hit's interpretation class.
+# ---------------------------------------------------------------------------
+rule tx_report_all:
+    input:
+        expand(f"{TX_DIR}/report/{{contrast}}/dte_annotated.tsv", contrast=DEG_CONTRASTS),
+
+
+rule tx_report:
+    input:
+        dte=f"{TX_DIR}/dte/{{contrast}}/dte_results.tsv",
+        dtu_gene=f"{TX_DIR}/dtu/{{contrast}}/dtu_gene.tsv",
+        fractions=f"{TX_DIR}/dtu/{{contrast}}/isoform_fractions.tsv",
+        gene_dge=f"{RESULTS}/deg/{{contrast}}/deseq2_results.tsv",
+        tx2gene=TX2GENE,
+    output:
+        annotated=f"{TX_DIR}/report/{{contrast}}/dte_annotated.tsv",
+        summary=f"{TX_DIR}/report/{{contrast}}/class_summary.tsv",
+    params:
+        padj=DEG_PADJ,
+        dif_cutoff=TXCFG.get("dif_cutoff", 0.10),
+        outdir=lambda w: f"{TX_DIR}/report/{w.contrast}",
+    log:
+        f"{LOGS}/transcript/report_{{contrast}}.log",
+    conda:
+        "../envs/r-transcript.yaml"
+    script:
+        "../scripts/tx_report.R"
