@@ -24,8 +24,8 @@ keywords:
   - Salmon
   - bioinformatics workflow
 # `version` + `date-released` are bumped automatically by release-please.
-version: "1.4.2" # x-release-please-version
-date-released: "2026-07-24" # x-release-please-date
+version: "1.5.0" # x-release-please-version
+date-released: "2026-07-26" # x-release-please-date
 identifiers:
   - type: doi
     value: "10.5281/zenodo.21502827"
