@@ -11,7 +11,11 @@
 # Differential expression is an OPT-IN stage (needs >=2 conditions in samples.csv);
 # it is not part of the default target:
 #   snakemake --use-conda --cores 8 deg_all          # gene-level DESeq2 DEG + GO/KEGG enrichment
-#   snakemake --use-conda --cores 8 det_all          # transcript-level DE from Salmon quants
+#   snakemake --use-conda --cores 20 txq_all         # bootstrap+bias Salmon quant (prereq for DTE)
+#   snakemake --use-conda --cores 8 dte_all          # ★ transcript DE — edgeR catchSalmon (needs r-transcript env)
+#   snakemake --use-conda --cores 8 dtu_dexseq_all   # DTU interpretation layer (DRIMSeq -> DEXSeq)
+#   snakemake --use-conda --cores 4 tx_report_all    # ★ annotated DTE report (DTE x gene-DGE x DTU)
+#   snakemake --use-conda --cores 8 det_all          # legacy naive transcript DE (NumReads->DESeq2)
 #
 # Reference genomes/annotation are provided by the user under ref/ (see README).
 
@@ -29,6 +33,7 @@ include: "rules/qc.smk"
 include: "rules/salmon.smk"
 include: "rules/deg.smk"
 include: "rules/det.smk"
+include: "rules/transcript_de.smk"
 
 
 rule all:

@@ -26,8 +26,9 @@ This pipeline integrates three core components plus an opt-in downstream analysi
 4. **Differential expression** (`deg_all` target, *opt-in*) - DESeq2 differential
    expression over the featureCounts matrix plus GO/KEGG enrichment (see
    [Differential Expression](#differential-expression-opt-in-r--deseq2)).
-5. **Transcript-level DE** (`det_all` target, *opt-in*) - DESeq2 on the Salmon
-   per-transcript count matrix (plain + decoy quants), for the same contrast.
+5. **Transcript-level DE** (`dte_all` target, *opt-in*) - edgeR **catchSalmon** on
+   bootstrap-quantified Salmon transcripts (`txq_all`), dividing out read-to-transcript
+   ambiguity so transcript-level FDR is controlled (legacy naive DESeq2 = `det_all`).
 
 The three core stages live in a single standard-layout `workflow/Snakefile`: one
 `snakemake --use-conda` run builds them in dependency order (unified DAG). Run a
@@ -121,19 +122,51 @@ run per non-reference condition level (vs the reference), plus **GO/KEGG**
 over-representation on the up/down gene sets. Opt-in — see
 [Differential Expression](#differential-expression-opt-in-r--deseq2).
 
-### 5. Transcript-level differential expression (`det_all` target, opt-in)
+### 5. Transcript-level differential expression (`dte_all` target, opt-in)
 
-**DESeq2** on the Salmon per-transcript estimated-count (`NumReads`) matrix, for the
-same contrast as `deg_all`, run for both the plain and decoy-aware quants. Emits a
-transcript **count matrix** + **TPM matrix**, DE tables (all + significant), and
-PCA / volcano / MA / heatmap plots under `results/transcript_de/{salmon,salmon_decoy}/`;
-transcripts are annotated with gene symbol + biotype from the GENCODE headers. At the
-transcript level this uses the salmon estimated counts directly (rounded, low-count
-filtered) — no `tximport` needed, so it runs in the existing container.
+Differential **transcript** expression (DTE), done correctly for a high-multiplicity
+annotation (GENCODE v36, 231k transcripts). Two opt-in steps:
+
+1. **`txq_all`** — re-quantify with Salmon in bootstrap + bias-aware mode
+   (`--numBootstraps 100 --gcBias --seqBias --posBias --rangeFactorizationBins 4`)
+   against the decoy-aware index → `results/quants_boot/`.
+2. **`dte_all`** — edgeR **`catchSalmon`**: estimates each transcript's
+   read-to-transcript-ambiguity (RTA) overdispersion from the bootstraps and divides it
+   out, restoring valid negative-binomial inference, then tests the same contrast as
+   `deg_all` (glmQLF / TREAT effect-size floor). Emits `dte_results.tsv` (per-transcript
+   `logFC` / `FDR` / `Overdispersion`), `significant.tsv`, a gene-level Simes roll-up, and
+   MDS / BCV / MA / volcano plots under `results/transcript/dte/{contrast}/`.
 
 ```bash
-snakemake --use-conda --cores 8 det_all
+snakemake --use-conda --cores 20 txq_all   # bootstrap quant (prerequisite)
+snakemake --use-conda --cores 8  dte_all   # ★ the DTE deliverable
 ```
+
+> Needs the **`r-transcript`** conda env (edgeR ≥ 4), so **rebuild the container** after
+> pulling this (`docker build -t rnaseq-pipeline:latest .`, or
+> `apptainer build --fakeroot rnaseq-pipeline.sif apptainer.def`). Best with ≥ 3
+> replicates per group.
+
+Why not plain DESeq2 on `NumReads`? Transcript counts carry RTA overdispersion that does
+**not** follow the mean–variance trend empirical-Bayes shrinkage assumes, so per-transcript
+FDR is not controlled. The older `det_all` target (naive `NumReads` → DESeq2,
+`results/transcript_de_naive/`) is kept for continuity but should not be the reported result.
+
+**Interpretation + report (`tx_report_all`, opt-in).** A DE transcript can be DE for two
+reasons — its whole gene moved (*gene-driven*) or *it* shifted relative to its siblings
+(*isoform-specific*) — and the distinction usually carries the biology. The report joins
+each DTE hit to its gene-level DESeq2 result and a **DTU** flag (DRIMSeq → DEXSeq,
+`dtu_dexseq_all`) and labels the class:
+
+```bash
+snakemake --use-conda --cores 8 dtu_dexseq_all   # DTU (DEXSeq) interpretation layer
+snakemake --use-conda --cores 4 tx_report_all    # ★ annotated report (pulls DTE + gene-DGE + DTU)
+```
+
+`tx_report_all` builds the whole chain and writes `dte_annotated.tsv` (per transcript:
+DTE `logFC`/`FDR`/`Overdispersion` × gene-DGE × DTU `dIF`, with an `isoform_specific` /
+`gene_driven` / `gene_and_switch` class) plus `class_summary.tsv` under
+`results/transcript/report/{contrast}/`.
 
 ## Requirements
 
