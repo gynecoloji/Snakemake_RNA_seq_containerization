@@ -26,6 +26,8 @@ This pipeline integrates three core components plus an opt-in downstream analysi
 4. **Differential expression** (`deg_all` target, *opt-in*) - DESeq2 differential
    expression over the featureCounts matrix plus GO/KEGG enrichment (see
    [Differential Expression](#differential-expression-opt-in-r--deseq2)).
+5. **Transcript-level DE** (`det_all` target, *opt-in*) - DESeq2 on the Salmon
+   per-transcript count matrix (plain + decoy quants), for the same contrast.
 
 The three core stages live in a single standard-layout `workflow/Snakefile`: one
 `snakemake --use-conda` run builds them in dependency order (unified DAG). Run a
@@ -109,8 +111,8 @@ Alignment-free transcript quantification of the trimmed reads against:
 - a **decoy-aware** index (transcriptome + genome decoys), which reduces spurious
   mapping of genomic reads.
 
-Each writes `quant.sf` per sample (transcript TPM/counts) for isoform-level analysis
-(e.g. `tximport` → DESeq2, or sleuth).
+Each writes `quant.sf` per sample (transcript TPM/counts), consumed by the
+transcript-level differential-expression stage (`det_all`) below.
 
 ### 4. Differential expression (`deg_all` target, opt-in)
 
@@ -118,6 +120,20 @@ Downstream **DESeq2** differential expression over the `featureCounts` gene matr
 run per non-reference condition level (vs the reference), plus **GO/KEGG**
 over-representation on the up/down gene sets. Opt-in — see
 [Differential Expression](#differential-expression-opt-in-r--deseq2).
+
+### 5. Transcript-level differential expression (`det_all` target, opt-in)
+
+**DESeq2** on the Salmon per-transcript estimated-count (`NumReads`) matrix, for the
+same contrast as `deg_all`, run for both the plain and decoy-aware quants. Emits a
+transcript **count matrix** + **TPM matrix**, DE tables (all + significant), and
+PCA / volcano / MA / heatmap plots under `results/transcript_de/{salmon,salmon_decoy}/`;
+transcripts are annotated with gene symbol + biotype from the GENCODE headers. At the
+transcript level this uses the salmon estimated counts directly (rounded, low-count
+filtered) — no `tximport` needed, so it runs in the existing container.
+
+```bash
+snakemake --use-conda --cores 8 det_all
+```
 
 ## Requirements
 
