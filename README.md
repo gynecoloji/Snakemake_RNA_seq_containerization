@@ -1,11 +1,11 @@
 # RNA-seq Analysis Pipeline
 
 [![CI](https://github.com/gynecoloji/snakemake_RNAseq/actions/workflows/ci.yml/badge.svg)](https://github.com/gynecoloji/snakemake_RNAseq/actions/workflows/ci.yml)
-[![DOI](https://zenodo.org/badge/1126053465.svg)](https://doi.org/10.5281/zenodo.21502827)
-[![Release](https://img.shields.io/github/v/release/gynecoloji/snakemake_RNAseq?label=release)](https://github.com/gynecoloji/snakemake_RNAseq/releases)
-[![Snakemake](https://img.shields.io/badge/snakemake-%E2%89%A58.0-brightgreen)](https://snakemake.github.io)
-[![Docker Hub](https://img.shields.io/docker/pulls/gynecoloji/rnaseq-pipeline?logo=docker&label=docker%20pulls)](https://hub.docker.com/r/gynecoloji/rnaseq-pipeline)
-[![License: MIT](https://img.shields.io/github/license/gynecoloji/snakemake_RNAseq)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/gynecoloji/snakemake_RNAseq)](https://github.com/gynecoloji/snakemake_RNAseq/releases/latest)
+[![Snakemake](https://img.shields.io/badge/snakemake-%E2%89%A58.0-brightgreen.svg)](https://snakemake.github.io)
+[![Docker Pulls](https://img.shields.io/docker/pulls/gynecoloji/rnaseq-pipeline)](https://hub.docker.com/r/gynecoloji/rnaseq-pipeline)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![DOI](https://zenodo.org/badge/1289539811.svg)](https://doi.org/10.5281/zenodo.21693794)
 
 A comprehensive Snakemake workflow for processing and analyzing paired-end RNA-seq
 data from raw reads to a gene-level count matrix and transcript-level abundances,
