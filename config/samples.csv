@@ -1,5 +1,7 @@
 sample_id,condition
-Control_1,control
-Control_2,control
-Treatment_1,treatment
-Treatment_2,treatment
+Mitra_C1,control
+Mitra_C2,control
+Mitra_C3,control
+Mitra_NICD3_1,NICD3
+Mitra_NICD3_2,NICD3
+Mitra_NICD3_3,NICD3
